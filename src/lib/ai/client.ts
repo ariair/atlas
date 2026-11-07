@@ -21,7 +21,7 @@ let _client: Anthropic | null = null;
 function getClient(): Anthropic {
   if (process.env.AI_ENABLED === 'false') throw new AIError('AI is turned off.');
   if (!process.env.ANTHROPIC_API_KEY) throw new AIError('AI is not configured.');
-  return (_client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY }));
+  return (_client ??= new Anthropic({ apiKey: process.env.ANTHROPIC_API_KEY, timeout: 100_000, maxRetries: 1 }));
 }
 
 type UserContent = string | Anthropic.Messages.ContentBlockParam[];

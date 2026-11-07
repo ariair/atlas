@@ -2,6 +2,7 @@ import { ExtractionDraftSchema } from '@/lib/schemas';
 import { getUserId } from '@/lib/user';
 import { appendToWorld, getCourseIds, getWorldForUser } from '@/db/queries';
 import { draftToAdditions } from '@/lib/ingest/commit';
+import { checkDraftLimits } from '@/lib/ingest/limits';
 import { linkNewCourse } from '@/db/linking';
 import { demoSampleIds, demoWorld, getSample, isDemoRequest, sampleAdditions, samplesCookieHeader } from '@/lib/demo';
 
@@ -19,9 +20,8 @@ export async function POST(request: Request) {
   const parsed = ExtractionDraftSchema.safeParse((body as { draft?: unknown })?.draft);
   if (!parsed.success) return Response.json({ error: 'That draft is not valid. Go back and check it.' }, { status: 400 });
   const draft = parsed.data;
-  if (draft.nodes.length > 200 || draft.edges.length > 400 || draft.deadlines.length > 100) {
-    return Response.json({ error: 'That draft is too large to save.' }, { status: 413 });
-  }
+  const tooBig = checkDraftLimits(draft);
+  if (tooBig) return Response.json({ error: tooBig }, { status: 400 });
 
   // Demo mode: nothing is saved. The sample is remembered in a cookie so the world "grows" in this browser.
   if (isDemoRequest(request)) {
@@ -50,6 +50,11 @@ export async function POST(request: Request) {
     const linking = await linkNewCourse(userId, result.courseId);
     return Response.json({ ok: true, courseId: result.courseId, linking, world: await getWorldForUser(userId) });
   } catch (err) {
+    // Two quick confirms of the same course race: the second hits a unique-key error. Report it as a duplicate.
+    const e = err as { code?: string; cause?: { code?: string } };
+    if ((e?.code ?? e?.cause?.code) === '23505') {
+      return Response.json({ error: `You already added ${draft.course.code} for ${draft.course.term}.` }, { status: 409 });
+    }
     console.error('[ingest/commit] failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not save that. Try again.' }, { status: 500 });
   }

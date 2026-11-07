@@ -4,7 +4,7 @@
 import { ExtractionDraftSchema } from '../schemas';
 import type { ExtractionDraft } from '../../types';
 import type { AiExtraction } from './prompt';
-import { zonedToIso } from './dates';
+import { isAmbiguousNumericDate, termYear, zonedToIso } from './dates';
 
 export type CourseInfo = {
   code: string;
@@ -14,10 +14,14 @@ export type CourseInfo = {
   year: 1 | 2 | 3 | 4;
 };
 
+// Keep model text a sensible size so long output can't break the UI or the database.
+export const MAX = { label: 80, summary: 300, title: 120, dueText: 200, topic: 60, warning: 300, warnings: 20 };
+const clip = (s: string, n: number) => s.trim().slice(0, n).trim();
+
 const EXAM_KINDS = new Set(['quiz', 'midterm', 'final']);
 
 export function buildDraft(ai: AiExtraction, course: CourseInfo): ExtractionDraft {
-  const warnings = [...ai.warnings.map((w) => w.trim()).filter(Boolean)];
+  const warnings = ai.warnings.map((w) => clip(w, MAX.warning)).filter(Boolean).slice(0, MAX.warnings);
   const seen = new Set<string>();
   const key = (s: string) => s.trim().toLowerCase();
   const nodes: ExtractionDraft['nodes'] = [];
@@ -29,13 +33,13 @@ export function buildDraft(ai: AiExtraction, course: CourseInfo): ExtractionDraf
   });
 
   for (const c of ai.concepts) {
-    const label = c.label.trim();
+    const label = clip(c.label, MAX.label);
     if (!label || seen.has(key(label))) continue;
     seen.add(key(label));
-    nodes.push(baseNode(label, 'concept', c.summary.trim(), c.topic?.trim() || null));
+    nodes.push(baseNode(label, 'concept', clip(c.summary, MAX.summary), c.topic ? clip(c.topic, MAX.topic) || null : null));
   }
 
-  const topics = [...new Set([...ai.topics, ...nodes.map((n) => n.topicId).filter((t): t is string => !!t)].map((t) => t.trim()).filter(Boolean))];
+  const topics = [...new Set([...ai.topics, ...nodes.map((n) => n.topicId).filter((t): t is string => !!t)].map((t) => clip(t, MAX.topic)).filter(Boolean))];
 
   const deadlines: ExtractionDraft['deadlines'] = [];
   const edges: ExtractionDraft['edges'] = [];
@@ -47,10 +51,10 @@ export function buildDraft(ai: AiExtraction, course: CourseInfo): ExtractionDraf
     edges.push({ from, to, type, label });
     return true;
   };
-  const conceptLabel = (label: string) => nodes.find((n) => n.type === 'concept' && key(n.label) === key(label))?.label;
+  const conceptLabel = (label: string) => nodes.find((n) => n.type === 'concept' && key(n.label) === key(clip(label, MAX.label)))?.label;
 
   for (const a of ai.assessments) {
-    let title = a.title.trim();
+    let title = clip(a.title, MAX.title);
     if (!title) continue;
     if (seen.has(key(title))) title = `${title} (${course.code})`;
     if (seen.has(key(title))) continue;
@@ -59,18 +63,30 @@ export function buildDraft(ai: AiExtraction, course: CourseInfo): ExtractionDraf
     const covered = a.covers.map(conceptLabel).filter((l): l is string => !!l);
     for (const c of covered) addEdge(c, title, 'prerequisite', 'needed for');
 
-    const dueAt = zonedToIso(a.dueAt);
+    let dueAt = zonedToIso(a.dueAt);
     if (a.dueAt && !dueAt) warnings.push(`Could not read the date for "${title}", so it needs review.`);
+    // Never trust a date that could be read two ways, or one far outside the term. A person must set it.
+    if (dueAt && isAmbiguousNumericDate(a.dueText)) {
+      warnings.push(`"${title}": the date "${a.dueText.trim()}" could be month/day or day/month, so please set it yourself.`);
+      dueAt = null;
+    }
+    const ty = termYear(course.term);
+    if (dueAt && ty !== null && Math.abs(new Date(dueAt).getUTCFullYear() - ty) > 1) {
+      warnings.push(`"${title}": the date is in ${new Date(dueAt).getUTCFullYear()}, far from ${course.term}, so please check it.`);
+      dueAt = null;
+    }
+    const weightOk = a.weightPct !== null && Number.isFinite(a.weightPct) && a.weightPct >= 0 && a.weightPct <= 100;
+    if (a.weightPct !== null && !weightOk) warnings.push(`Ignored an unreadable grade weight for "${title}".`);
     deadlines.push({
-      title, kind: a.kind, dueAt, dueText: a.dueText.trim(), weightPct: a.weightPct,
+      title, kind: a.kind, dueAt, dueText: clip(a.dueText, MAX.dueText), weightPct: weightOk ? a.weightPct : null,
       nodeIds: [title, ...covered], status: dueAt ? 'confirmed' : 'needs_review',
     });
   }
 
   let dropped = 0;
   for (const e of ai.edges) {
-    const from = nodes.find((n) => key(n.label) === key(e.from))?.label;
-    const to = nodes.find((n) => key(n.label) === key(e.to))?.label;
+    const from = nodes.find((n) => key(n.label) === key(clip(e.from, MAX.label)))?.label;
+    const to = nodes.find((n) => key(n.label) === key(clip(e.to, MAX.label)))?.label;
     if (!from || !to || !addEdge(from, to, e.type, e.label?.trim() || null)) dropped++;
   }
   if (dropped > 0) warnings.push(`Dropped ${dropped} link(s) that pointed to unknown or duplicate items.`);
