@@ -33,3 +33,6 @@
 - Demo ingest only accepts those 3 sample texts; commit takes sampleId, saves nothing, and remembers samples in the atlas_demo_samples cookie so /api/world, deadlines and .ics grow in that browser.
 - /api/demo -> {demo, forced, samples}. DemoBadge (role=status) + Exit button live in src/app/(app)/layout.tsx. Upload page shows a "Use a sample syllabus" picker in demo mode.
 - Verified offline: production build with a broken DATABASE_URL and invalid API key ran the whole loop. Study/quiz/grade recordings are NOT done: Person A owns those routes. They should call isDemoRequest(request) and add a recorded response (see src/lib/demo.ts, scripts/record-demo.ts).
+
+- Re-recorded the three demo samples with claude-sonnet-5-5 after moving sample dates to Nov 11 - Dec 4 2026 (so some land inside the 7-day banner window). Cost about $0.13.
+- Shared-file fix (src/lib/ai/client.ts, tell Person A): Sonnet 5.5, Opus 5.5 and Fable reject a forced tool_choice (400). The client now uses tool_choice auto + an instruction for those models and keeps forcing for Haiku. Switching AI_MODEL_HEAVY to Sonnet in production is now safe.
