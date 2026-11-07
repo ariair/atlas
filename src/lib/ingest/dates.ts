@@ -29,3 +29,23 @@ export function zonedToIso(local: string | null | undefined, timeZone: string = 
   utc = guess - tzOffsetMs(utc, timeZone); // second pass handles daylight-saving edges
   return new Date(utc).toISOString();
 }
+
+/**
+ * True for numeric dates like "03/04/2027" or "3-4" where the first two numbers could be month/day OR day/month
+ * (both 12 or less, and different). Those must be confirmed by a person, never trusted.
+ */
+export function isAmbiguousNumericDate(text: string): boolean {
+  const re = /(?<![\d.])(\d{1,2})[\/.-](\d{1,2})(?:[\/.-](?:\d{2}|\d{4}))?(?![\d])/g;
+  for (const m of text.matchAll(re)) {
+    const a = Number(m[1]);
+    const b = Number(m[2]);
+    if (a >= 1 && a <= 12 && b >= 1 && b <= 12 && a !== b) return true;
+  }
+  return false;
+}
+
+/** The 4-digit year in a term name like "Fall 2026", or null. */
+export function termYear(term: string): number | null {
+  const m = term.match(/\b(20\d{2})\b/);
+  return m ? Number(m[1]) : null;
+}

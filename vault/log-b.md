@@ -36,3 +36,8 @@
 
 - Re-recorded the three demo samples with claude-sonnet-5-5 after moving sample dates to Nov 11 - Dec 4 2026 (so some land inside the 7-day banner window). Cost about $0.13.
 - Shared-file fix (src/lib/ai/client.ts, tell Person A): Sonnet 5.5, Opus 5.5 and Fable reject a forced tool_choice (400). The client now uses tool_choice auto + an instruction for those models and keeps forcing for Haiku. Switching AI_MODEL_HEAVY to Sonnet in production is now safe.
+
+## Prompt 10 (Person B side): final bug check
+- Tried: 70k-char paste (413), blank text (400), bad year (400), daily limit 0 (429), AI off (503), garbage / oversize commit (400), no-dates syllabus (all Needs review), blank PDF (clear message), ambiguous dates, duplicate commit race.
+- Fixed: model text is clipped to sane lengths (buildDraft MAX); commit route checks sizes (src/lib/ingest/limits.ts); unique-key race on double confirm returns 409; AI client has a 100 s timeout and 1 retry (src/lib/ai/client.ts, shared file); grade weights outside 0-100 are ignored; numeric dates that could be month/day or day/month and dates more than a year from the term are marked Needs review instead of trusted.
+- Known: cached drafts are stored after cleanup, so improvements to buildDraft apply only to new uploads. Dates assume America/Vancouver.
