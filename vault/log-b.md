@@ -26,3 +26,10 @@
 - PATCH /api/edges/:id {status: accepted|rejected} (reject deletes suggested only; 409 on accepted). POST /api/nodes/merge {keepId, mergeId} moves links + deadline refs to the kept node (src/lib/merge.ts).
 - Deadlines page /deadlines (groups: This week = next 7 days, Next 2 weeks, Later, Needs review, Past), welcome banner (role=alert, dismissible per tab) mounted by src/app/(app)/layout.tsx, GET /api/deadlines/due?days=7, GET /api/deadlines.ics (RFC 5545: CRLF, folding, 1-day alarm, all-day for 11:59 PM deadlines), Add to Google Calendar links (src/lib/ics.ts).
 - Real-AI check: CSCI 220 sample linked to a real CPSC 213 upload with 13 sensible suggestions; test course removed afterwards.
+
+## Prompt 5B: Demo mode
+- Demo mode = Sample University fixture + recorded AI responses. Needs no DB, AI or login. On via env DEMO=1, ?demo=1 (the badge stores it in the atlas_demo cookie), or that cookie. Check with isDemoRequest(request) from src/lib/demo.ts.
+- Recordings: src/fixtures/recorded/{csci220,biol210,math230}.json (text, raw extraction, raw link suggestions). Re-record with `npm run demo:record`; for the final demo use `AI_MODEL_HEAVY=claude-sonnet-5-5 npm run demo:record`. Current recordings were made with Haiku.
+- Demo ingest only accepts those 3 sample texts; commit takes sampleId, saves nothing, and remembers samples in the atlas_demo_samples cookie so /api/world, deadlines and .ics grow in that browser.
+- /api/demo -> {demo, forced, samples}. DemoBadge (role=status) + Exit button live in src/app/(app)/layout.tsx. Upload page shows a "Use a sample syllabus" picker in demo mode.
+- Verified offline: production build with a broken DATABASE_URL and invalid API key ran the whole loop. Study/quiz/grade recordings are NOT done: Person A owns those routes. They should call isDemoRequest(request) and add a recorded response (see src/lib/demo.ts, scripts/record-demo.ts).

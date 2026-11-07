@@ -1,0 +1,491 @@
+{
+  "id": "biol210",
+  "title": "BIOL 210: Genetics and Genomes",
+  "course": {
+    "code": "BIOL 210",
+    "title": "Genetics and Genomes",
+    "domain": "Biology",
+    "term": "Winter 2027",
+    "year": 2
+  },
+  "text": "BIOL 210 - Genetics and Genomes\nSample University, Department of Biology\nWinter 2027\n\nWeek-by-week schedule\nWeek 1: Mendelian genetics, Punnett squares, test crosses\nWeek 2: Chromosomes and linkage, recombination, gene mapping\nWeek 3: DNA as genetic material, replication, repair of DNA damage\nWeek 4: Gene expression: transcription, RNA processing, translation\nWeek 5: Regulation of gene expression in bacteria (the lac operon) and in eukaryotes\nWeek 6: Mutations and their effects. Reading week at the end of this week.\nWeek 7: Population genetics and Hardy-Weinberg equilibrium\nWeek 8: Genomics, sequencing technologies, and CRISPR gene editing\n\nAssessments\nProblem set 1 is worth 8% and is due at the end of week 3.\nProblem set 2 is worth 8% and is due in week 6 (exact day to be announced).\nLab report: 12%, due Monday, March 1, 2027, 5:00 PM.\nMidterm: 30%, held in the week after reading week. Date TBA.\nFinal exam: 42%, exam period (date to be announced).\n",
+  "ai": {
+    "topics": [
+      "Mendelian and chromosomal inheritance",
+      "DNA replication, repair and molecular basis",
+      "Gene expression and regulation",
+      "Mutation, population and genomic genetics"
+    ],
+    "concepts": [
+      {
+        "label": "Mendelian genetics",
+        "summary": "Patterns of inheritance of traits passed from parents to offspring.",
+        "topic": "Mendelian and chromosomal inheritance"
+      },
+      {
+        "label": "Punnett squares",
+        "summary": "Diagram for predicting offspring genotype and phenotype ratios from parental crosses.",
+        "topic": "Mendelian and chromosomal inheritance"
+      },
+      {
+        "label": "Test crosses",
+        "summary": "Crossing an individual of unknown genotype with a recessive homozygote to infer its genotype.",
+        "topic": "Mendelian and chromosomal inheritance"
+      },
+      {
+        "label": "Chromosomes and linkage",
+        "summary": "Genes located on the same chromosome tend to be inherited together.",
+        "topic": "Mendelian and chromosomal inheritance"
+      },
+      {
+        "label": "Recombination",
+        "summary": "Exchange of genetic material between homologous chromosomes that breaks linkage.",
+        "topic": "Mendelian and chromosomal inheritance"
+      },
+      {
+        "label": "Gene mapping",
+        "summary": "Using recombination frequencies to determine the relative positions of genes on chromosomes.",
+        "topic": "Mendelian and chromosomal inheritance"
+      },
+      {
+        "label": "DNA as genetic material",
+        "summary": "Evidence that DNA, rather than protein, carries genetic information.",
+        "topic": "DNA replication, repair and molecular basis"
+      },
+      {
+        "label": "DNA replication",
+        "summary": "Copying of the DNA molecule before cell division.",
+        "topic": "DNA replication, repair and molecular basis"
+      },
+      {
+        "label": "DNA repair",
+        "summary": "Mechanisms that correct damage to DNA.",
+        "topic": "DNA replication, repair and molecular basis"
+      },
+      {
+        "label": "Transcription",
+        "summary": "Synthesis of RNA from a DNA template.",
+        "topic": "Gene expression and regulation"
+      },
+      {
+        "label": "RNA processing",
+        "summary": "Modification of primary RNA transcripts before they are used for translation.",
+        "topic": "Gene expression and regulation"
+      },
+      {
+        "label": "Translation",
+        "summary": "Synthesis of a polypeptide from an mRNA template by ribosomes.",
+        "topic": "Gene expression and regulation"
+      },
+      {
+        "label": "Gene regulation in bacteria",
+        "summary": "Control of gene expression in bacteria, illustrated by the lac operon.",
+        "topic": "Gene expression and regulation"
+      },
+      {
+        "label": "Lac operon",
+        "summary": "Bacterial operon system regulating lactose metabolism genes.",
+        "topic": "Gene expression and regulation"
+      },
+      {
+        "label": "Gene regulation in eukaryotes",
+        "summary": "Control of gene expression in eukaryotic cells.",
+        "topic": "Gene expression and regulation"
+      },
+      {
+        "label": "Mutations and effects",
+        "summary": "Changes in DNA sequence and their consequences for gene function.",
+        "topic": "Mutation, population and genomic genetics"
+      },
+      {
+        "label": "Population genetics",
+        "summary": "Study of allele and genotype frequencies in populations and how they change.",
+        "topic": "Mutation, population and genomic genetics"
+      },
+      {
+        "label": "Hardy-Weinberg equilibrium",
+        "summary": "Null model describing expected genotype frequencies in a non-evolving population.",
+        "topic": "Mutation, population and genomic genetics"
+      },
+      {
+        "label": "Genomics",
+        "summary": "Analysis of whole genomes and their sequences.",
+        "topic": "Mutation, population and genomic genetics"
+      },
+      {
+        "label": "Sequencing technologies",
+        "summary": "Methods for determining DNA sequences.",
+        "topic": "Mutation, population and genomic genetics"
+      },
+      {
+        "label": "CRISPR gene editing",
+        "summary": "Technique for targeted modification of genomic DNA.",
+        "topic": "Mutation, population and genomic genetics"
+      }
+    ],
+    "assessments": [
+      {
+        "title": "Problem set 1",
+        "kind": "assignment",
+        "dueText": "due at the end of week 3",
+        "dueAt": null,
+        "weightPct": 8,
+        "covers": [
+          "Mendelian genetics",
+          "Punnett squares",
+          "Test crosses",
+          "DNA as genetic material",
+          "DNA replication"
+        ]
+      },
+      {
+        "title": "Problem set 2",
+        "kind": "assignment",
+        "dueText": "due in week 6 (exact day to be announced)",
+        "dueAt": null,
+        "weightPct": 8,
+        "covers": [
+          "Mutations and effects"
+        ]
+      },
+      {
+        "title": "Lab report",
+        "kind": "other",
+        "dueText": "Monday, March 1, 2027, 5:00 PM",
+        "dueAt": "2027-03-01T17:00",
+        "weightPct": 12,
+        "covers": []
+      },
+      {
+        "title": "Midterm",
+        "kind": "midterm",
+        "dueText": "held in the week after reading week. Date TBA.",
+        "dueAt": null,
+        "weightPct": 30,
+        "covers": []
+      },
+      {
+        "title": "Final exam",
+        "kind": "final",
+        "dueText": "exam period (date to be announced)",
+        "dueAt": null,
+        "weightPct": 42,
+        "covers": []
+      }
+    ],
+    "edges": [
+      {
+        "from": "Mendelian genetics",
+        "to": "Punnett squares",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Mendelian genetics",
+        "to": "Test crosses",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Chromosomes and linkage",
+        "to": "Recombination",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Recombination",
+        "to": "Gene mapping",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "DNA as genetic material",
+        "to": "DNA replication",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "DNA replication",
+        "to": "DNA repair",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Transcription",
+        "to": "RNA processing",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "RNA processing",
+        "to": "Translation",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Transcription",
+        "to": "Gene regulation in bacteria",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Gene regulation in bacteria",
+        "to": "Lac operon",
+        "type": "related",
+        "label": null
+      },
+      {
+        "from": "Gene regulation in bacteria",
+        "to": "Gene regulation in eukaryotes",
+        "type": "related",
+        "label": null
+      },
+      {
+        "from": "DNA repair",
+        "to": "Mutations and effects",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Mutations and effects",
+        "to": "Population genetics",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Population genetics",
+        "to": "Hardy-Weinberg equilibrium",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Genomics",
+        "to": "Sequencing technologies",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Sequencing technologies",
+        "to": "CRISPR gene editing",
+        "type": "related",
+        "label": null
+      }
+    ],
+    "warnings": [
+      "Problem set 1 due date given only as 'end of week 3'; no exact date, so dueAt is null.",
+      "Problem set 2 due day to be announced in week 6; dueAt is null.",
+      "Midterm date TBA; dueAt is null.",
+      "Final exam date to be announced; dueAt is null.",
+      "Weights add up to 100% (8+8+12+30+42).",
+      "Lab report kind set to 'other' since it is a report rather than a listed category; covers left empty because the document does not state tested concepts.",
+      "Concept prerequisite edges are inferred from the week-by-week order and are approximate; the document does not state them explicitly.",
+      "Week 1-8 schedule: 'Reading week at the end of week 6' is not a graded item and was not extracted as an assessment."
+    ]
+  },
+  "links": {
+    "links": [
+      {
+        "from": "biol-210-winter-2027:mendelian-genetics",
+        "to": "mendel",
+        "type": "related",
+        "label": "Same topic, deeper treatment of inheritance",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:dna-replication",
+        "to": "replication",
+        "type": "related",
+        "label": "Same process, more detailed mechanism",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:transcription",
+        "to": "transcription",
+        "type": "related",
+        "label": "Same process covered in both courses",
+        "confidence": 0.55
+      },
+      {
+        "from": "biol-210-winter-2027:translation",
+        "to": "translation",
+        "type": "related",
+        "label": "Same process covered in both courses",
+        "confidence": 0.55
+      },
+      {
+        "from": "biol-210-winter-2027:gene-regulation-in-bacteria",
+        "to": "generegulation",
+        "type": "related",
+        "label": "Gene regulation topic extended to bacteria",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:mutations-and-effects",
+        "to": "mutations",
+        "type": "related",
+        "label": "Same topic, deeper treatment of mutation effects",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:dna-as-genetic-material",
+        "to": "dna",
+        "type": "prerequisite",
+        "label": "DNA structure needed before its role as genetic material",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:mendelian-genetics",
+        "to": "prob",
+        "type": "applies",
+        "label": "Probability underlies Mendelian ratios",
+        "confidence": 0.5
+      },
+      {
+        "from": "biol-210-winter-2027:punnett-squares",
+        "to": "prob",
+        "type": "applies",
+        "label": "Punnett squares apply probability to crosses",
+        "confidence": 0.55
+      },
+      {
+        "from": "biol-210-winter-2027:hardy-weinberg-equilibrium",
+        "to": "prob",
+        "type": "applies",
+        "label": "Hardy-Weinberg uses probability of allele combinations",
+        "confidence": 0.55
+      },
+      {
+        "from": "biol-210-winter-2027:population-genetics",
+        "to": "mle",
+        "type": "applies",
+        "label": "Estimating allele frequencies uses likelihood methods",
+        "confidence": 0.5
+      },
+      {
+        "from": "biol-210-winter-2027:gene-mapping",
+        "to": "bayes",
+        "type": "applies",
+        "label": "Mapping inference relies on conditional probability",
+        "confidence": 0.5
+      },
+      {
+        "from": "biol-210-winter-2027:genomics",
+        "to": "seqalign",
+        "type": "applies",
+        "label": "Genomics relies on sequence alignment methods",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:sequencing-technologies",
+        "to": "assembly",
+        "type": "applies",
+        "label": "Sequencing data feeds genome assembly",
+        "confidence": 0.7
+      },
+      {
+        "from": "biol-210-winter-2027:genomics",
+        "to": "assembly",
+        "type": "applies",
+        "label": "Genome assembly is a core genomics task",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:genomics",
+        "to": "phylo",
+        "type": "applies",
+        "label": "Genomic data used to build phylogenies",
+        "confidence": 0.5
+      },
+      {
+        "from": "biol-210-winter-2027:gene-regulation-in-eukaryotes",
+        "to": "expression",
+        "type": "applies",
+        "label": "Regulation context for expression analysis",
+        "confidence": 0.5
+      },
+      {
+        "from": "biol-210-winter-2027:mutations-and-effects",
+        "to": "variants",
+        "type": "applies",
+        "label": "Mutation effects underlie variant interpretation",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:sequencing-technologies",
+        "to": "variants",
+        "type": "applies",
+        "label": "Variant calling works on sequencing reads",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:crispr-gene-editing",
+        "to": "dna-repair",
+        "type": "applies",
+        "label": "CRISPR edits rely on cellular DNA repair",
+        "confidence": 0.55
+      },
+      {
+        "from": "biol-210-winter-2027:dna-as-genetic-material",
+        "to": "geneticcode",
+        "type": "prerequisite",
+        "label": "Genetic material encodes the genetic code",
+        "confidence": 0.4
+      },
+      {
+        "from": "biol-210-winter-2027:translation",
+        "to": "geneticcode",
+        "type": "prerequisite",
+        "label": "Translation requires the genetic code",
+        "confidence": 0.6
+      },
+      {
+        "from": "biol-210-winter-2027:population-genetics",
+        "to": "linreg",
+        "type": "related",
+        "label": "Statistical modeling of population data",
+        "confidence": 0.3
+      },
+      {
+        "from": "biol-210-winter-2027:gene-mapping",
+        "to": "graphs",
+        "type": "related",
+        "label": "Linkage maps resemble weighted graphs",
+        "confidence": 0.3
+      }
+    ],
+    "duplicates": [
+      {
+        "newId": "biol-210-winter-2027:dna-replication",
+        "existingId": "replication",
+        "confidence": 0.7
+      },
+      {
+        "newId": "biol-210-winter-2027:transcription",
+        "existingId": "transcription",
+        "confidence": 0.8
+      },
+      {
+        "newId": "biol-210-winter-2027:translation",
+        "existingId": "translation",
+        "confidence": 0.8
+      },
+      {
+        "newId": "biol-210-winter-2027:mendelian-genetics",
+        "existingId": "mendel",
+        "confidence": 0.6
+      },
+      {
+        "newId": "biol-210-winter-2027:mutations-and-effects",
+        "existingId": "mutations",
+        "confidence": 0.6
+      },
+      {
+        "newId": "biol-210-winter-2027:gene-regulation-in-bacteria",
+        "existingId": "generegulation",
+        "confidence": 0.4
+      }
+    ]
+  },
+  "model": "claude-haiku-5-5",
+  "recordedAt": "2026-11-07T22:19:39.944Z"
+}

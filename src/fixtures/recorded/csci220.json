@@ -1,0 +1,381 @@
+{
+  "id": "csci220",
+  "title": "CSCI 220: Operating Systems",
+  "course": {
+    "code": "CSCI 220",
+    "title": "Operating Systems",
+    "domain": "Computer Science",
+    "term": "Fall 2026",
+    "year": 2
+  },
+  "text": "CSCI 220: Operating Systems\nSample University, Department of Computer Science\nTerm: Fall 2026\n\nInstructor: Dr. Imaginary Person (fictional)\n\nCourse description\nThis course explains how an operating system manages a computer: processes, scheduling, memory, files and concurrency.\n\nTopics\n1. Processes and threads: what a process is, process states, context switching, threads vs processes.\n2. CPU scheduling: first-come-first-served, shortest job first, round robin, priority scheduling.\n3. Synchronization: race conditions, locks, semaphores, deadlock.\n4. Memory management: paging, virtual memory, page replacement.\n5. File systems: files and directories, allocation methods, journaling.\nPrerequisites for this course: you should understand recursion and linked lists from CSCI 201.\n\nGrading\nAssignment 1 (Process simulator): 10%, due Friday, September 25, 2026 at 11:59 PM\nAssignment 2 (Scheduler): 10%, due Friday, October 16, 2026 at 11:59 PM\nQuiz 1 (processes and scheduling): 5%, in class on Wednesday, October 7, 2026\nMidterm exam: 25%, Thursday, October 22, 2026, 6:00 PM to 8:00 PM\nAssignment 3 (Virtual memory): 10%, due Friday, November 13, 2026 at 11:59 PM\nFinal exam: 40%, date set by the registrar during the December exam period\n\nPolicies\nLate work loses 10% per day. The lowest quiz mark is dropped.\n",
+  "ai": {
+    "topics": [
+      "Processes and threads",
+      "CPU scheduling",
+      "Synchronization",
+      "Memory management",
+      "File systems"
+    ],
+    "concepts": [
+      {
+        "label": "Process and process states",
+        "summary": "A process is a running program; it moves through states such as ready, running and waiting.",
+        "topic": "Processes and threads"
+      },
+      {
+        "label": "Context switching",
+        "summary": "The OS saves one process's state and restores another's so the CPU can be shared.",
+        "topic": "Processes and threads"
+      },
+      {
+        "label": "Threads vs processes",
+        "summary": "Threads are units of execution that share a process's resources; processes are isolated from each other.",
+        "topic": "Processes and threads"
+      },
+      {
+        "label": "First-come-first-served scheduling",
+        "summary": "Runs jobs in arrival order without preemption.",
+        "topic": "CPU scheduling"
+      },
+      {
+        "label": "Shortest job first",
+        "summary": "Runs the job with the smallest expected burst time next.",
+        "topic": "CPU scheduling"
+      },
+      {
+        "label": "Round robin scheduling",
+        "summary": "Gives each ready process a fixed time slice in turn.",
+        "topic": "CPU scheduling"
+      },
+      {
+        "label": "Priority scheduling",
+        "summary": "Runs the highest-priority ready process first.",
+        "topic": "CPU scheduling"
+      },
+      {
+        "label": "Race conditions",
+        "summary": "Outcomes depend on the timing of concurrent access to shared data.",
+        "topic": "Synchronization"
+      },
+      {
+        "label": "Locks",
+        "summary": "Mutual exclusion primitives that allow only one thread into a critical section at a time.",
+        "topic": "Synchronization"
+      },
+      {
+        "label": "Semaphores",
+        "summary": "Counter-based synchronization objects supporting wait and signal operations.",
+        "topic": "Synchronization"
+      },
+      {
+        "label": "Deadlock",
+        "summary": "A situation where processes wait forever for resources held by each other.",
+        "topic": "Synchronization"
+      },
+      {
+        "label": "Paging",
+        "summary": "Divides memory into fixed-size pages mapped to frames, avoiding contiguous allocation.",
+        "topic": "Memory management"
+      },
+      {
+        "label": "Virtual memory",
+        "summary": "Gives each process an address space larger or separate from physical memory.",
+        "topic": "Memory management"
+      },
+      {
+        "label": "Page replacement",
+        "summary": "Chooses which page to evict from memory when a new page must be loaded.",
+        "topic": "Memory management"
+      },
+      {
+        "label": "Files and directories",
+        "summary": "Files store data; directories organize files into a hierarchy.",
+        "topic": "File systems"
+      },
+      {
+        "label": "File allocation methods",
+        "summary": "Strategies such as contiguous, linked or indexed allocation for placing file data on disk.",
+        "topic": "File systems"
+      },
+      {
+        "label": "Journaling",
+        "summary": "Logs intended changes so the file system can recover consistently after a crash.",
+        "topic": "File systems"
+      },
+      {
+        "label": "Recursion and linked lists",
+        "summary": "Prerequisite programming concepts from CSCI 201.",
+        "topic": null
+      }
+    ],
+    "assessments": [
+      {
+        "title": "Assignment 1 (Process simulator)",
+        "kind": "assignment",
+        "dueText": "Friday, September 25, 2026 at 11:59 PM",
+        "dueAt": "2026-09-25T23:59",
+        "weightPct": 10,
+        "covers": [
+          "Process and process states",
+          "Context switching"
+        ]
+      },
+      {
+        "title": "Assignment 2 (Scheduler)",
+        "kind": "assignment",
+        "dueText": "Friday, October 16, 2026 at 11:59 PM",
+        "dueAt": "2026-10-16T23:59",
+        "weightPct": 10,
+        "covers": [
+          "First-come-first-served scheduling",
+          "Shortest job first",
+          "Round robin scheduling",
+          "Priority scheduling"
+        ]
+      },
+      {
+        "title": "Quiz 1 (processes and scheduling)",
+        "kind": "quiz",
+        "dueText": "in class on Wednesday, October 7, 2026",
+        "dueAt": null,
+        "weightPct": 5,
+        "covers": [
+          "Process and process states",
+          "Context switching",
+          "First-come-first-served scheduling",
+          "Shortest job first",
+          "Round robin scheduling",
+          "Priority scheduling"
+        ]
+      },
+      {
+        "title": "Midterm exam",
+        "kind": "midterm",
+        "dueText": "Thursday, October 22, 2026, 6:00 PM to 8:00 PM",
+        "dueAt": "2026-10-22T18:00",
+        "weightPct": 25,
+        "covers": []
+      },
+      {
+        "title": "Assignment 3 (Virtual memory)",
+        "kind": "assignment",
+        "dueText": "Friday, November 13, 2026 at 11:59 PM",
+        "dueAt": "2026-11-13T23:59",
+        "weightPct": 10,
+        "covers": [
+          "Virtual memory",
+          "Paging",
+          "Page replacement"
+        ]
+      },
+      {
+        "title": "Final exam",
+        "kind": "final",
+        "dueText": "date set by the registrar during the December exam period",
+        "dueAt": null,
+        "weightPct": 40,
+        "covers": []
+      }
+    ],
+    "edges": [
+      {
+        "from": "Recursion and linked lists",
+        "to": "Process and process states",
+        "type": "prerequisite",
+        "label": "Course prerequisite (CSCI 201)"
+      },
+      {
+        "from": "Process and process states",
+        "to": "Context switching",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Process and process states",
+        "to": "Threads vs processes",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Process and process states",
+        "to": "First-come-first-served scheduling",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "First-come-first-served scheduling",
+        "to": "Shortest job first",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Round robin scheduling",
+        "to": "Priority scheduling",
+        "type": "related",
+        "label": null
+      },
+      {
+        "from": "Race conditions",
+        "to": "Locks",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Locks",
+        "to": "Semaphores",
+        "type": "related",
+        "label": null
+      },
+      {
+        "from": "Locks",
+        "to": "Deadlock",
+        "type": "related",
+        "label": null
+      },
+      {
+        "from": "Paging",
+        "to": "Virtual memory",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Virtual memory",
+        "to": "Page replacement",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "Files and directories",
+        "to": "File allocation methods",
+        "type": "prerequisite",
+        "label": null
+      },
+      {
+        "from": "File allocation methods",
+        "to": "Journaling",
+        "type": "related",
+        "label": null
+      }
+    ],
+    "warnings": [
+      "Document lists topics but gives no per-concept dates beyond graded items; the prerequisite and relation edges are inferred from typical course ordering, not stated explicitly.",
+      "Quiz 1 has no time given; dueAt left null since the exact time is not stated (date is Oct 7, 2026).",
+      "Midterm exam covers are not specified in the document; left empty.",
+      "Final exam date is not set; dueAt null.",
+      "Weights total 100% (10+10+5+25+10+40).",
+      "Lowest quiz mark is dropped per policy; only one quiz is listed."
+    ]
+  },
+  "links": {
+    "links": [
+      {
+        "from": "variables",
+        "to": "csci-220-fall-2026:process-and-process-states",
+        "type": "prerequisite",
+        "label": "Basic programming needed before OS concepts",
+        "confidence": 0.3
+      },
+      {
+        "from": "csci-220-fall-2026:recursion-and-linked-lists",
+        "to": "recursion",
+        "type": "related",
+        "label": "Both build on recursive definitions",
+        "confidence": 0.6
+      },
+      {
+        "from": "csci-220-fall-2026:recursion-and-linked-lists",
+        "to": "linkedlists",
+        "type": "related",
+        "label": "Same linked list structure",
+        "confidence": 0.7
+      },
+      {
+        "from": "csci-220-fall-2026:priority-scheduling",
+        "to": "heaps",
+        "type": "applies",
+        "label": "Priority queues implement priority scheduling",
+        "confidence": 0.6
+      },
+      {
+        "from": "csci-220-fall-2026:first-come-first-served-scheduling",
+        "to": "stacksqueues",
+        "type": "applies",
+        "label": "FCFS uses a queue ordering",
+        "confidence": 0.55
+      },
+      {
+        "from": "csci-220-fall-2026:round-robin-scheduling",
+        "to": "stacksqueues",
+        "type": "applies",
+        "label": "Round robin uses a circular queue",
+        "confidence": 0.5
+      },
+      {
+        "from": "csci-220-fall-2026:shortest-job-first",
+        "to": "sorting",
+        "type": "related",
+        "label": "Choosing shortest job is a selection by key",
+        "confidence": 0.4
+      },
+      {
+        "from": "csci-220-fall-2026:paging",
+        "to": "hashtables",
+        "type": "related",
+        "label": "Page tables map pages to frames like a lookup table",
+        "confidence": 0.35
+      },
+      {
+        "from": "csci-220-fall-2026:file-allocation-methods",
+        "to": "linkedlists",
+        "type": "applies",
+        "label": "Linked file allocation uses linked lists",
+        "confidence": 0.55
+      },
+      {
+        "from": "csci-220-fall-2026:files-and-directories",
+        "to": "trees",
+        "type": "applies",
+        "label": "Directory hierarchy is a tree",
+        "confidence": 0.6
+      },
+      {
+        "from": "csci-220-fall-2026:locks",
+        "to": "variables",
+        "type": "related",
+        "label": "Shared variables are what locks protect",
+        "confidence": 0.3
+      },
+      {
+        "from": "csci-220-fall-2026:page-replacement",
+        "to": "dp",
+        "type": "related",
+        "label": "Optimal replacement reasoning relates to lookahead",
+        "confidence": 0.2
+      },
+      {
+        "from": "csci-220-fall-2026:context-switching",
+        "to": "stacksqueues",
+        "type": "related",
+        "label": "Saved state resembles stack-based call state",
+        "confidence": 0.2
+      },
+      {
+        "from": "csci-220-fall-2026:round-robin-scheduling",
+        "to": "csci-220-fall-2026:process-and-process-states",
+        "type": "prerequisite",
+        "label": "Schedulers move processes between states",
+        "confidence": 0.5
+      }
+    ],
+    "duplicates": [
+      {
+        "newId": "csci-220-fall-2026:recursion-and-linked-lists",
+        "existingId": "recursion",
+        "confidence": 0.3
+      }
+    ]
+  },
+  "model": "claude-haiku-5-5",
+  "recordedAt": "2026-11-07T22:19:24.720Z"
+}

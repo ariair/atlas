@@ -4,6 +4,9 @@ import { getUserId } from '@/lib/user';
 import { AIError } from '@/lib/ai/client';
 import { consumeAiCall, getCachedDraft, saveCachedDraft } from '@/db/queries';
 import { LIMITS, contentHash, countPdfPages, extractDraft } from '@/lib/ingest/extract';
+import { findSampleByText, isDemoRequest } from '@/lib/demo';
+import { buildDraft } from '@/lib/ingest/buildDraft';
+import { AiExtractionSchema } from '@/lib/ingest/prompt';
 
 export const maxDuration = 120;
 
@@ -30,6 +33,14 @@ export async function POST(request: Request) {
   const parsed = FormSchema.safeParse(Object.fromEntries(['code', 'title', 'domain', 'term', 'year'].map((k) => [k, form.get(k)])));
   if (!parsed.success) return fail('Please fill in the course code, title, department, term and year.', 400);
   const course = { ...parsed.data, year: parsed.data.year as 1 | 2 | 3 | 4 };
+
+  // Demo mode: replay the recorded response for a sample syllabus. No database, no AI.
+  if (isDemoRequest(request)) {
+    const pasted = form.get('text');
+    const sample = typeof pasted === 'string' ? findSampleByText(pasted) : undefined;
+    if (!sample) return fail('Demo mode can only read the three sample syllabi. Choose one with "Use a sample syllabus".', 400);
+    return Response.json({ draft: buildDraft(AiExtractionSchema.parse(sample.ai), course), cached: false, demo: true, sampleId: sample.id });
+  }
 
   const file = form.get('file');
   const textField = form.get('text');

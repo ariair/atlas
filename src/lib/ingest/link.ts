@@ -27,7 +27,7 @@ export const AiLinksSchema = z.object({
 });
 export type AiLinks = z.infer<typeof AiLinksSchema>;
 
-type Compact = Pick<GraphNode, 'id' | 'label'> & { course: string; domain: string };
+export type Compact = Pick<GraphNode, 'id' | 'label'> & { course: string; domain: string };
 
 export const LINK_SYSTEM_PROMPT = `You connect ideas across a university student's courses.
 You get NEW concepts from a course the student just added, and EXISTING concepts from their other courses. Each has an id.
@@ -81,6 +81,11 @@ export function buildSuggestedEdges(
   return out;
 }
 
+/** Asks Claude for raw link suggestions (server only). Used by suggestLinks and by the demo recorder. */
+export async function requestLinks(newNodes: Compact[], existing: Compact[], model: string = MODELS.heavy): Promise<AiLinks> {
+  return callClaudeJson(AiLinksSchema, LINK_SYSTEM_PROMPT, buildLinkInput(newNodes, existing.slice(0, MAX_EXISTING)), model, 4000);
+}
+
 /** Calls Claude (server only) and returns suggested edges. Throws AIError on failure. */
 export async function suggestLinks(
   newNodes: Compact[],
@@ -88,7 +93,7 @@ export async function suggestLinks(
   existingEdgeIds: Set<string>,
 ): Promise<GraphEdge[]> {
   if (newNodes.length === 0 || existing.length === 0) return [];
-  const ai = await callClaudeJson(AiLinksSchema, LINK_SYSTEM_PROMPT, buildLinkInput(newNodes, existing.slice(0, MAX_EXISTING)), MODELS.heavy, 4000);
+  const ai = await requestLinks(newNodes, existing);
   return buildSuggestedEdges(
     ai,
     new Set(newNodes.map((n) => n.id)),

@@ -1,8 +1,13 @@
 import { deleteUserData } from '@/db/queries';
+import { isDemoRequest, samplesCookieHeader } from '@/lib/demo';
 import { getUserId } from '@/lib/user';
 
 // Deletes ALL of the current user's data (courses, topics, nodes, edges, deadlines, documents).
-export async function DELETE() {
+// In demo mode there is nothing stored, so it only forgets the samples added in this browser.
+export async function DELETE(request: Request) {
+  if (isDemoRequest(request)) {
+    return Response.json({ ok: true, demo: true }, { headers: { 'Set-Cookie': samplesCookieHeader([]) } });
+  }
   try {
     await deleteUserData(await getUserId());
     return Response.json({ ok: true });

@@ -5,7 +5,7 @@ import { callClaudeJson } from '../ai/client';
 import { MODELS } from '../ai/models';
 import type { ExtractionDraft } from '../../types';
 import { buildDraft, type CourseInfo } from './buildDraft';
-import { AiExtractionSchema, buildSystemPrompt, wrapDocumentText } from './prompt';
+import { AiExtractionSchema, buildSystemPrompt, wrapDocumentText, type AiExtraction } from './prompt';
 
 export const LIMITS = { maxPdfBytes: 5 * 1024 * 1024, maxPdfPages: 20, maxTextChars: 60_000 };
 
@@ -24,7 +24,8 @@ export function countPdfPages(pdf: Buffer): number {
   return (pdf.toString('latin1').match(/\/Type\s*\/Page[^s]/g) ?? []).length;
 }
 
-export async function extractDraft(input: IngestInput, model: string = MODELS.heavy): Promise<ExtractionDraft> {
+/** The raw model answer (before cleanup). Used by extractDraft and by the demo recorder. */
+export async function extractAi(input: IngestInput, model: string = MODELS.heavy): Promise<AiExtraction> {
   const content: Anthropic.Messages.ContentBlockParam[] = input.pdf
     ? [
         { type: 'document', source: { type: 'base64', media_type: 'application/pdf', data: input.pdf.toString('base64') } },
@@ -32,6 +33,9 @@ export async function extractDraft(input: IngestInput, model: string = MODELS.he
       ]
     : [{ type: 'text', text: wrapDocumentText(input.text ?? '') }];
 
-  const ai = await callClaudeJson(AiExtractionSchema, buildSystemPrompt(input.course), content, model, 8000);
-  return buildDraft(ai, input.course);
+  return callClaudeJson(AiExtractionSchema, buildSystemPrompt(input.course), content, model, 8000);
+}
+
+export async function extractDraft(input: IngestInput, model: string = MODELS.heavy): Promise<ExtractionDraft> {
+  return buildDraft(await extractAi(input, model), input.course);
 }

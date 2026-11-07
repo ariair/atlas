@@ -11,7 +11,8 @@
     "db:generate": "drizzle-kit generate",
     "db:migrate": "tsx --env-file=.env.local src/db/migrate.ts",
     "db:seed": "tsx --env-file=.env.local src/db/seed.ts",
-    "test:ai": "RUN_AI_TESTS=1 node --env-file=.env.local ./node_modules/vitest/vitest.mjs --run src/lib/ingest/samples.test.ts"
+    "test:ai": "RUN_AI_TESTS=1 node --env-file=.env.local ./node_modules/vitest/vitest.mjs --run src/lib/ingest/samples.test.ts",
+    "demo:record": "tsx --env-file=.env.local scripts/record-demo.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",

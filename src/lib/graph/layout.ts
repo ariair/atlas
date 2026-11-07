@@ -24,6 +24,8 @@ export interface CanvasNode extends GraphNode {
   y?: number;
   vx?: number;
   vy?: number;
+  homeX?: number; // resting spot the map drifts around once it has settled
+  homeY?: number;
 }
 
 export interface CanvasLink {
@@ -55,7 +57,11 @@ export function anchorRadius(count: number): number {
   return count <= 1 ? 0 : Math.max(260, 110 * count);
 }
 
-/** Fixed anchor per domain, evenly spaced on a circle, first one at the top. */
+// Anchors sit on a wide ellipse rather than a circle so the map fills a landscape screen.
+export const ANCHOR_STRETCH = { x: 1.35, y: 0.8 };
+
+/** Fixed anchor per domain, evenly spaced around a wide ellipse, first one at the bottom (so the
+ * bottom corners stay clear for the map key and the controls). */
 export function computeAnchors(domains: string[]): Map<string, Point> {
   const r = anchorRadius(domains.length);
   const anchors = new Map<string, Point>();
@@ -64,8 +70,8 @@ export function computeAnchors(domains: string[]): Map<string, Point> {
     return anchors;
   }
   domains.forEach((d, i) => {
-    const angle = -Math.PI / 2 + (2 * Math.PI * i) / domains.length;
-    anchors.set(d, { x: r * Math.cos(angle), y: r * Math.sin(angle) });
+    const angle = Math.PI / 2 + (2 * Math.PI * i) / domains.length;
+    anchors.set(d, { x: r * ANCHOR_STRETCH.x * Math.cos(angle), y: r * ANCHOR_STRETCH.y * Math.sin(angle) });
   });
   return anchors;
 }
@@ -151,6 +157,26 @@ export function islandCentroids(nodes: CanvasNode[], anchors: Map<string, Point>
     out.set(d, s && s.n > 0 ? { x: s.x / s.n, y: s.y / s.n } : a);
   }
   return out;
+}
+
+/** WCAG relative luminance of a #RRGGBB colour. */
+export function luminance(hex: string): number {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v: number) => {
+    const c = v / 255;
+    return c <= 0.03928 ? c / 12.92 : Math.pow((c + 0.055) / 1.055, 2.4);
+  };
+  return 0.2126 * ch((n >> 16) & 255) + 0.7152 * ch((n >> 8) & 255) + 0.0722 * ch(n & 255);
+}
+
+export function contrastRatio(a: string, b: string): number {
+  const [hi, lo] = [luminance(a), luminance(b)].sort((x, y) => y - x);
+  return (hi + 0.05) / (lo + 0.05);
+}
+
+/** Near-black or white, whichever reads better on a line colour (for line badges). */
+export function readableTextOn(hex: string): '#0E1116' | '#FFFFFF' {
+  return contrastRatio(hex, '#0E1116') >= contrastRatio(hex, '#FFFFFF') ? '#0E1116' : '#FFFFFF';
 }
 
 /** Turn a World into canvas nodes and links. Edges pointing at missing nodes are dropped. */

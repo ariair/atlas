@@ -16,7 +16,7 @@ export default function DueBanner() {
     try {
       if (sessionStorage.getItem(KEY) === '1') return;
     } catch {}
-    fetch(`/api/deadlines/due?days=7${window.location.search.includes('demo=1') ? '&demo=1' : ''}`)
+    fetch('/api/deadlines/due?days=7')
       .then((r) => (r.ok ? r.json() : null))
       .then((d) => {
         if (d && d.count > 0) {
