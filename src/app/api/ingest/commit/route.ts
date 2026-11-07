@@ -2,9 +2,12 @@ import { ExtractionDraftSchema } from '@/lib/schemas';
 import { getUserId } from '@/lib/user';
 import { appendToWorld, getCourseIds, getWorldForUser } from '@/db/queries';
 import { draftToAdditions } from '@/lib/ingest/commit';
+import { linkNewCourse } from '@/db/linking';
+
+export const maxDuration = 120;
 
 // POST { draft }: saves a reviewed draft and returns the updated World.
-// (The linking pass that suggests cross-course edges is added in prompt 4B.)
+// After saving, a linking pass suggests cross-course links (saved as dashed "suggested" edges).
 export async function POST(request: Request) {
   let body: unknown;
   try {
@@ -26,7 +29,8 @@ export async function POST(request: Request) {
       return Response.json({ error: `You already added ${draft.course.code} for ${draft.course.term}.` }, { status: 409 });
     }
     await appendToWorld(userId, result.additions);
-    return Response.json({ ok: true, courseId: result.courseId, world: await getWorldForUser(userId) });
+    const linking = await linkNewCourse(userId, result.courseId);
+    return Response.json({ ok: true, courseId: result.courseId, linking, world: await getWorldForUser(userId) });
   } catch (err) {
     console.error('[ingest/commit] failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not save that. Try again.' }, { status: 500 });

@@ -20,3 +20,9 @@
 - POST /api/ingest/commit saves a reviewed draft (409 if same course code + term exists) and returns the World. Linking pass comes in 4B.
 - Upload page + Review screen at /upload (src/app/(app)/upload). Samples in /samples. npm run test:ai runs the 3 samples against the real API (about 1 cent).
 - Migration 0001 added ai_usage and documents.draft (applied).
+
+## Prompt 4B: Linking + deadlines
+- Linking pass: src/lib/ingest/link.ts (prompt, validation) + src/db/linking.ts. Runs after POST /api/ingest/commit, never fails the save; suggested edges (conf >= 0.4, max 25, one new + one existing concept) saved as status=suggested. Possible duplicates are suggested "related" edges labelled "Possible duplicate".
+- PATCH /api/edges/:id {status: accepted|rejected} (reject deletes suggested only; 409 on accepted). POST /api/nodes/merge {keepId, mergeId} moves links + deadline refs to the kept node (src/lib/merge.ts).
+- Deadlines page /deadlines (groups: This week = next 7 days, Next 2 weeks, Later, Needs review, Past), welcome banner (role=alert, dismissible per tab) mounted by src/app/(app)/layout.tsx, GET /api/deadlines/due?days=7, GET /api/deadlines.ics (RFC 5545: CRLF, folding, 1-day alarm, all-day for 11:59 PM deadlines), Add to Google Calendar links (src/lib/ics.ts).
+- Real-AI check: CSCI 220 sample linked to a real CPSC 213 upload with 13 sensible suggestions; test course removed afterwards.

@@ -83,7 +83,9 @@ export default function UploadFlow() {
       const res = await fetch('/api/ingest/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft: final }) });
       const data = await res.json();
       if (!res.ok) return data.error ?? 'We could not save that.';
-      setSavedMessage(`Saved ${final.course.code}: ${final.nodes.length} items and ${final.deadlines.length} deadlines added.`);
+      const added: number = data.linking?.added ?? 0;
+      const links = added > 0 ? ` Atlas also found ${added} possible ${added === 1 ? 'link' : 'links'} to your other courses. They show as dashed lines until you accept them.` : '';
+      setSavedMessage(`Saved ${final.course.code}: ${final.nodes.length} items and ${final.deadlines.length} deadlines added.${links}`);
       setStep('done');
       return null;
     } catch {
