@@ -7,6 +7,16 @@ const FRIENDLY_ERROR = 'The AI could not produce a usable answer. Please try aga
 
 export class AIError extends Error {}
 
+// Newer models (Sonnet 5.5, Opus 5.5, Fable, Mythos) reject a FORCED tool choice with a 400
+// ("tool_choice: type tool and any are not supported for this model"). For those we use tool_choice "auto"
+// plus an explicit instruction to call the tool; the Zod check and repair retry below still apply.
+const NO_FORCED_TOOL = /^claude-(sonnet-5-5|opus-5-5|fable|mythos)/;
+const learnedNoForced = new Set<string>(); // models that rejected forcing at runtime
+export function supportsForcedToolChoice(model: string): boolean {
+  return !NO_FORCED_TOOL.test(model) && !learnedNoForced.has(model);
+}
+const CALL_TOOL_RULE = '\n\nYou MUST answer by calling the respond tool exactly once with your complete answer. Do not write any other text.';
+
 let _client: Anthropic | null = null;
 function getClient(): Anthropic {
   if (process.env.AI_ENABLED === 'false') throw new AIError('AI is turned off.');
@@ -16,9 +26,44 @@ function getClient(): Anthropic {
 
 type UserContent = string | Anthropic.Messages.ContentBlockParam[];
 
+
+type RespondTool = Anthropic.Messages.Tool.InputSchema;
+
+/** One Messages call that returns tool output. Forces the tool when the model allows it, otherwise asks nicely. */
+async function request(
+  client: Anthropic,
+  model: string,
+  system: string,
+  messages: Anthropic.Messages.MessageParam[],
+  inputSchema: RespondTool,
+  maxTokens: number,
+) {
+  const tools = [{ name: 'respond', description: 'Return the final answer.', input_schema: inputSchema }];
+  const send = (forced: boolean) =>
+    client.messages.create({
+      model,
+      // Newer models may spend part of the budget on thinking, so give the auto path more room.
+      max_tokens: forced ? maxTokens : Math.min(maxTokens * 2, 16000),
+      system: forced ? system : system + CALL_TOOL_RULE,
+      messages,
+      tools,
+      tool_choice: forced ? { type: 'tool', name: 'respond' } : { type: 'auto' },
+    });
+
+  if (supportsForcedToolChoice(model)) {
+    try {
+      return await send(true);
+    } catch (err) {
+      if (!(err instanceof Anthropic.BadRequestError && /tool_choice/i.test(err.message))) throw err;
+      learnedNoForced.add(model); // remember, so later calls skip the failing request
+    }
+  }
+  return send(false);
+}
+
 /**
  * Calls Claude and returns output validated by a Zod schema (server only).
- * Uses a forced tool call so the model returns structured JSON. On a validation failure it retries
+ * Uses a tool call so the model returns structured JSON (forced where the model allows it). On a validation failure it retries
  * once, telling the model what was wrong; after that it throws a friendly error.
  * Logs token counts and estimated cost, never content.
  */
@@ -34,14 +79,7 @@ export async function callClaudeJson<T extends z.ZodType>(
   const messages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: user }];
 
   for (let attempt = 0; attempt < 2; attempt++) {
-    const res = await client.messages.create({
-      model,
-      max_tokens: maxTokens,
-      system,
-      messages,
-      tools: [{ name: 'respond', description: 'Return the final answer.', input_schema: inputSchema }],
-      tool_choice: { type: 'tool', name: 'respond' },
-    });
+    const res = await request(client, model, system, messages, inputSchema, maxTokens);
 
     console.log(
       `[ai] model=${model} in=${res.usage.input_tokens} out=${res.usage.output_tokens} ` +
