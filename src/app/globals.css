@@ -1,26 +1,231 @@
 @import "tailwindcss";
 
+/* Atlas: night-edition transit map. Dark by default (PRODUCT.md). */
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --ground: #0e1116; /* the map at night */
+  --grid: #161b22; /* faint map grid */
+  --surface: #151a21; /* panels and controls */
+  --surface-raised: #1d232c;
+  --rule: #2a313b; /* decorative 1px dividers */
+  --rule-strong: #6b7686; /* control borders, 3:1+ on surface */
+  --ink: #f2f0e9; /* bone white: text, stations, primary action */
+  --ink-muted: #b8bec8;
+  --ink-on-light: #0e1116;
+  --line-1: #e69f00; /* Okabe-Ito line colours, in DOMAIN_PALETTE order */
+  --line-2: #56b4e9;
+  --line-3: #009e73;
+  --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* strong ease-out (Emil skill) */
+  --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
 
 @theme inline {
-  --color-background: var(--background);
-  --color-foreground: var(--foreground);
-  --font-sans: var(--font-geist-sans);
-  --font-mono: var(--font-geist-mono);
+  --color-ground: var(--ground);
+  --color-grid: var(--grid);
+  --color-surface: var(--surface);
+  --color-surface-raised: var(--surface-raised);
+  --color-rule: var(--rule);
+  --color-rule-strong: var(--rule-strong);
+  --color-ink: var(--ink);
+  --color-ink-muted: var(--ink-muted);
+  --color-ink-on-light: var(--ink-on-light);
+  --font-sans: var(--font-host-grotesk), ui-sans-serif, system-ui, sans-serif;
+  --font-mono: var(--font-jetbrains-mono), ui-monospace, monospace;
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  color-scheme: dark;
+  scrollbar-color: var(--rule-strong) var(--ground);
 }
 
 body {
-  background: var(--background);
-  color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  background: var(--ground);
+  color: var(--ink);
+  font-family: var(--font-sans);
+  font-size: 1.125rem; /* 18px floor */
+  line-height: 1.55;
+  caret-color: var(--line-2);
+}
+
+::selection {
+  background: var(--line-2);
+  color: var(--ink-on-light);
+}
+
+:focus-visible {
+  outline: 3px solid var(--ink);
+  outline-offset: 2px;
+}
+
+a {
+  text-underline-offset: 0.2em;
+}
+
+/* Numbers in data line up. */
+.tabular {
+  font-variant-numeric: tabular-nums;
+}
+
+/* One shared look for buttons and links that act like buttons (in the components layer so utilities can adjust size). */
+@layer components {
+.btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  min-height: 2.75rem;
+  min-width: 2.75rem;
+  padding: 0 1rem;
+  border-radius: 6px;
+  border: 1px solid var(--rule-strong);
+  background: var(--surface);
+  color: var(--ink);
+  font-weight: 500;
+  white-space: nowrap;
+  transition:
+    background-color 150ms var(--ease-out),
+    border-color 150ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .btn:hover {
+    background: var(--surface-raised);
+    border-color: var(--ink-muted);
+  }
+}
+/* Pressing gives instant, small feedback (Emil: buttons must feel responsive). */
+.btn:active:not(:disabled) {
+  transform: scale(0.97);
+}
+.btn:disabled {
+  cursor: not-allowed;
+  opacity: 0.55;
+}
+.btn-primary {
+  background: var(--ink);
+  border-color: var(--ink);
+  color: var(--ink-on-light);
+}
+.btn-primary:hover {
+  background: #ffffff;
+  border-color: #ffffff;
+}
+.btn-icon {
+  padding: 0;
+  width: 2.75rem;
+}
+}
+
+/* The map's name card (Emil skill): scales from 0.97, never from 0, out of the dot it belongs to,
+   in 180ms on a strong ease-out; leaves faster than it arrives. When the pointer moves straight to
+   another dot the card does not re-animate: it glides there and its text swaps through a 2px blur. */
+.map-tip {
+  opacity: 0;
+  transform: translate(-50%, calc(-100% - 14px)) translateY(4px) scale(0.97);
+  transform-origin: 50% 100%;
+  transition:
+    opacity 120ms var(--ease-out),
+    transform 120ms var(--ease-out);
+}
+.map-tip[data-open="true"] {
+  opacity: 1;
+  transform: translate(-50%, calc(-100% - 14px));
+  transition-duration: 180ms;
+}
+.map-tip[data-instant="true"] {
+  transition-duration: 0ms;
+}
+.map-tip-body {
+  animation: tip-swap 180ms var(--ease-out);
+}
+@keyframes tip-swap {
+  from {
+    opacity: 0.4;
+    filter: blur(2px);
+  }
+}
+
+/* Map controls: quiet icon buttons in a frosted tray. */
+.map-btn {
+  display: grid;
+  place-items: center;
+  width: 2.75rem;
+  height: 2.75rem;
+  border-radius: 9px;
+  color: var(--ink-muted);
+  transition:
+    background-color 150ms var(--ease-out),
+    color 150ms var(--ease-out),
+    transform 140ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .map-btn:hover {
+    background: rgba(255, 255, 255, 0.07);
+    color: var(--ink);
+  }
+}
+.map-btn:active:not(:disabled) {
+  transform: scale(0.94);
+}
+.map-btn:disabled {
+  opacity: 0.4;
+  cursor: not-allowed;
+}
+
+/* The map key rests faded and comes up to full strength when you reach for it. */
+.map-key {
+  opacity: 0.72;
+  transition: opacity 200ms ease;
+}
+.map-key:hover,
+.map-key:focus-within,
+.map-key[open]:hover {
+  opacity: 1;
+}
+.map-key summary::-webkit-details-marker {
+  display: none;
+}
+
+/* The map fades in once its data arrives, instead of popping. */
+.map-loading {
+  animation: tip-swap 300ms var(--ease-out);
+}
+.map-tip[data-below="true"] {
+  transform-origin: 50% 0;
+  transform: translate(-50%, 14px) translateY(-6px) scale(0.97);
+}
+.map-tip[data-below="true"][data-open="true"] {
+  transform: translate(-50%, 14px);
+}
+
+/* Landing: the hero's name card sits above its dot like the live map's hover card. */
+.hero-tip {
+  transform: translate(-50%, calc(-100% - 18px));
+}
+.hero-tip[data-align="end"] {
+  transform: translate(calc(-100% + 24px), calc(-100% - 18px));
+}
+.hero-tip[data-align="start"] {
+  transform: translate(-24px, calc(-100% - 18px));
+}
+
+/* Landing: the hero text settles 8px into place once on load. Only position moves, so the
+   text is readable even if the animation never runs. */
+.hero-enter {
+  animation: hero-enter 700ms cubic-bezier(0.22, 1, 0.36, 1);
+}
+@keyframes hero-enter {
+  from {
+    transform: translateY(8px);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
 }

@@ -3,10 +3,14 @@ import { getDemoWorld } from '@/fixtures/demoWorld';
 import type { GraphEdge, GraphNode } from '@/types';
 import {
   ANCHOR_STRENGTH,
+  ANCHOR_STRETCH,
   BRIDGE_STRENGTH,
+  DOMAIN_PALETTE,
   allDomains,
   anchorRadius,
   computeAnchors,
+  contrastRatio,
+  readableTextOn,
   domainWeights,
   isCrossDomain,
   islandCentroids,
@@ -47,14 +51,16 @@ describe('anchors', () => {
     expect(allDomains(world)).toEqual(['Art', 'Biology', 'Math']);
   });
 
-  it('places anchors evenly on a circle that grows with the domain count', () => {
+  it('places anchors evenly on a wide ellipse that grows with the domain count', () => {
     const anchors = computeAnchors(['A', 'B', 'C', 'D']);
     const r = anchorRadius(4);
+    const { x: sx, y: sy } = ANCHOR_STRETCH;
     expect(anchorRadius(8)).toBeGreaterThan(r);
+    expect(sx).toBeGreaterThan(sy); // wider than tall, to suit landscape screens
     expect(anchors.get('A')!.x).toBeCloseTo(0);
-    expect(anchors.get('A')!.y).toBeCloseTo(-r);
-    expect(anchors.get('B')!.x).toBeCloseTo(r);
-    for (const p of anchors.values()) expect(Math.hypot(p.x, p.y)).toBeCloseTo(r);
+    expect(anchors.get('A')!.y).toBeCloseTo(r * sy); // first subject at the bottom
+    expect(anchors.get('B')!.x).toBeCloseTo(-r * sx);
+    for (const p of anchors.values()) expect((p.x / (r * sx)) ** 2 + (p.y / (r * sy)) ** 2).toBeCloseTo(1);
   });
 
   it('puts a single domain at the centre', () => {
@@ -102,6 +108,17 @@ describe('neighborhood', () => {
     expect([...n.nodes].sort()).toEqual(['a', 'b', 'c']);
     expect([...n.edges].sort()).toEqual(['1', '2']);
   });
+});
+
+describe('line badges', () => {
+  it('picks the more readable text colour for every palette colour, at 4.5:1 or better', () => {
+    for (const hex of DOMAIN_PALETTE) {
+      const text = readableTextOn(hex);
+      expect(contrastRatio(hex, text)).toBeGreaterThanOrEqual(4.5);
+    }
+    expect(readableTextOn('#E69F00')).toBe('#0E1116');
+  });
+
 });
 
 describe('toGraphData', () => {
