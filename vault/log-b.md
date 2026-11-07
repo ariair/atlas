@@ -41,3 +41,8 @@
 - Tried: 70k-char paste (413), blank text (400), bad year (400), daily limit 0 (429), AI off (503), garbage / oversize commit (400), no-dates syllabus (all Needs review), blank PDF (clear message), ambiguous dates, duplicate commit race.
 - Fixed: model text is clipped to sane lengths (buildDraft MAX); commit route checks sizes (src/lib/ingest/limits.ts); unique-key race on double confirm returns 409; AI client has a 100 s timeout and 1 retry (src/lib/ai/client.ts, shared file); grade weights outside 0-100 are ignored; numeric dates that could be month/day or day/month and dates more than a year from the term are marked Needs review instead of trusted.
 - Known: cached drafts are stored after cleanup, so improvements to buildDraft apply only to new uploads. Dates assume America/Vancouver.
+
+## Access gate (site closed until launch)
+- src/proxy.ts + src/lib/gate.ts: while SITE_ACCESS_KEY is set in Vercel (Production), every page and API route returns 401 unless the visitor holds the key (open once with ?key=KEY, which sets an HttpOnly cookie holding a hash). Unset = open. Local dev is unaffected.
+- Removed the unauthenticated /api/ai-test route (it called Claude with no cap).
+- To OPEN the site for judging: first lock down real mode (default visitors to demo mode, protect DELETE /api/me and real saves), then delete SITE_ACCESS_KEY in Vercel and redeploy.
