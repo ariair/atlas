@@ -25,3 +25,8 @@ Person B: db, api/world, api/ingest*, api/edges, api/nodes, api/deadlines*, api/
 - After a change use the verifier agent instead of running builds/tests in the main conversation.
 - Keep replies short: what changed, what to test.
 - Don't rewrite working files; make the smallest change.
+
+<!-- entire-agent:begin -->
+Read .entire/agent-guide.md for this repository's workflow, source inspection, and verification guidance.
+@.entire/agent-guide.md
+<!-- entire-agent:end -->
