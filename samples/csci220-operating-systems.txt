@@ -1,0 +1,27 @@
+CSCI 220: Operating Systems
+Sample University, Department of Computer Science
+Term: Fall 2026
+
+Instructor: Dr. Imaginary Person (fictional)
+
+Course description
+This course explains how an operating system manages a computer: processes, scheduling, memory, files and concurrency.
+
+Topics
+1. Processes and threads: what a process is, process states, context switching, threads vs processes.
+2. CPU scheduling: first-come-first-served, shortest job first, round robin, priority scheduling.
+3. Synchronization: race conditions, locks, semaphores, deadlock.
+4. Memory management: paging, virtual memory, page replacement.
+5. File systems: files and directories, allocation methods, journaling.
+Prerequisites for this course: you should understand recursion and linked lists from CSCI 201.
+
+Grading
+Assignment 1 (Process simulator): 10%, due Friday, September 25, 2026 at 11:59 PM
+Assignment 2 (Scheduler): 10%, due Friday, October 16, 2026 at 11:59 PM
+Quiz 1 (processes and scheduling): 5%, in class on Wednesday, October 7, 2026
+Midterm exam: 25%, Thursday, October 22, 2026, 6:00 PM to 8:00 PM
+Assignment 3 (Virtual memory): 10%, due Friday, November 13, 2026 at 11:59 PM
+Final exam: 40%, date set by the registrar during the December exam period
+
+Policies
+Late work loses 10% per day. The lowest quiz mark is dropped.

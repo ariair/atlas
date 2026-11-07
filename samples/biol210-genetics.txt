@@ -1,0 +1,20 @@
+BIOL 210 - Genetics and Genomes
+Sample University, Department of Biology
+Winter 2027
+
+Week-by-week schedule
+Week 1: Mendelian genetics, Punnett squares, test crosses
+Week 2: Chromosomes and linkage, recombination, gene mapping
+Week 3: DNA as genetic material, replication, repair of DNA damage
+Week 4: Gene expression: transcription, RNA processing, translation
+Week 5: Regulation of gene expression in bacteria (the lac operon) and in eukaryotes
+Week 6: Mutations and their effects. Reading week at the end of this week.
+Week 7: Population genetics and Hardy-Weinberg equilibrium
+Week 8: Genomics, sequencing technologies, and CRISPR gene editing
+
+Assessments
+Problem set 1 is worth 8% and is due at the end of week 3.
+Problem set 2 is worth 8% and is due in week 6 (exact day to be announced).
+Lab report: 12%, due Monday, March 1, 2027, 5:00 PM.
+Midterm: 30%, held in the week after reading week. Date TBA.
+Final exam: 42%, exam period (date to be announced).

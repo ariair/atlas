@@ -1,9 +1,14 @@
-import { getDemoWorld } from '@/fixtures/demoWorld';
-import { getUserId } from '@/lib/user';
+import { connection } from 'next/server';
+import { loadWorld } from '@/db/loadWorld';
 
 // Returns the whole World for the current user.
-// For now this is always the Sample University fixture; prompt 2B reads from the DB instead.
-export async function GET() {
-  await getUserId();
-  return Response.json(getDemoWorld(new Date()));
+// Falls back to the Sample University fixture when DEMO=1, ?demo=1, or the user has no data yet.
+export async function GET(request: Request) {
+  await connection(); // request-time data: never prerender (must run outside the try/catch)
+  try {
+    return Response.json(await loadWorld(request));
+  } catch (err) {
+    console.error('[world] database error:', err instanceof Error ? err.message : 'unknown');
+    return Response.json({ error: 'Could not load your world. Try again, or add ?demo=1 to use demo mode.' }, { status: 500 });
+  }
 }
