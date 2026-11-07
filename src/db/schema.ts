@@ -1,6 +1,6 @@
 // Postgres tables (PRD section 6). Every row has user_id; ids are unique per user,
 // so the primary key is (user_id, id). No uploaded file contents are ever stored.
-import { pgTable, text, integer, real, timestamp, primaryKey, index } from 'drizzle-orm/pg-core';
+import { pgTable, text, integer, real, timestamp, primaryKey, index, jsonb, date } from 'drizzle-orm/pg-core';
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
@@ -90,7 +90,19 @@ export const documents = pgTable(
     userId: userId(),
     hash: text('hash').notNull(),
     filename: text('filename').notNull(),
+    draft: jsonb('draft'), // the extracted structure (ExtractionDraft), cached by hash
     extractedAt: timestamp('extracted_at', { withTimezone: true }).notNull().defaultNow(),
   },
   (t) => [primaryKey({ columns: [t.userId, t.hash] })],
+);
+
+// Per-user daily AI call counter (cost and abuse control).
+export const aiUsage = pgTable(
+  'ai_usage',
+  {
+    userId: userId(),
+    day: date('day').notNull(),
+    calls: integer('calls').notNull().default(0),
+  },
+  (t) => [primaryKey({ columns: [t.userId, t.day] })],
 );
