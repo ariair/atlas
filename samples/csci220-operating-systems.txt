@@ -16,11 +16,11 @@ Topics
 Prerequisites for this course: you should understand recursion and linked lists from CSCI 201.
 
 Grading
-Assignment 1 (Process simulator): 10%, due Friday, September 25, 2026 at 11:59 PM
-Assignment 2 (Scheduler): 10%, due Friday, October 16, 2026 at 11:59 PM
-Quiz 1 (processes and scheduling): 5%, in class on Wednesday, October 7, 2026
-Midterm exam: 25%, Thursday, October 22, 2026, 6:00 PM to 8:00 PM
-Assignment 3 (Virtual memory): 10%, due Friday, November 13, 2026 at 11:59 PM
+Assignment 1 (Process simulator): 10%, due Friday, November 13, 2026 at 11:59 PM
+Assignment 2 (Scheduler): 10%, due Friday, November 27, 2026 at 11:59 PM
+Quiz 1 (processes and scheduling): 5%, in class on Wednesday, November 11, 2026
+Midterm exam: 25%, Thursday, November 19, 2026, 6:00 PM to 8:00 PM
+Assignment 3 (Virtual memory): 10%, due Friday, December 4, 2026 at 11:59 PM
 Final exam: 40%, date set by the registrar during the December exam period
 
 Policies
