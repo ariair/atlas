@@ -1,0 +1,195 @@
+// Pure layout helpers for the Atlas canvas (PRD section 5A). No React, no DOM.
+import type { GraphEdge, GraphNode, World } from '@/types';
+
+export interface Point {
+  x: number;
+  y: number;
+}
+
+// Okabe-Ito colour-blind-safe palette, ordered so the darkest blue (hard to see on a
+// dark background) is used last. Colour is never the only cue: islands also get labels.
+export const DOMAIN_PALETTE = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', '#CC79A7', '#D55E00', '#0072B2'];
+export const NEUTRAL_COLOR = '#9CA3AF';
+
+export const ANCHOR_STRENGTH = 0.12; // single-domain nodes
+export const BRIDGE_STRENGTH = 0.05; // multi-domain (bridge) nodes
+
+export interface CanvasNode extends GraphNode {
+  anchorX: number;
+  anchorY: number;
+  anchorStrength: number;
+  color: string;
+  strokeColor: string | null; // second domain colour for bridge nodes
+  x?: number;
+  y?: number;
+  vx?: number;
+  vy?: number;
+}
+
+export interface CanvasLink {
+  id: string;
+  source: string | CanvasNode; // d3 replaces the id with the node object
+  target: string | CanvasNode;
+  edge: GraphEdge;
+  cross: boolean; // joins two different domains, or touches a bridge node: drawn long and weak
+}
+
+export interface CanvasGraph {
+  nodes: CanvasNode[];
+  links: CanvasLink[];
+  domains: string[];
+  anchors: Map<string, Point>;
+  colors: Map<string, string>;
+}
+
+/** Every domain in the world, sorted, so anchors never depend on filters or input order. */
+export function allDomains(world: Pick<World, 'courses' | 'nodes'>): string[] {
+  const set = new Set<string>();
+  for (const c of world.courses) set.add(c.domain);
+  for (const n of world.nodes) for (const d of n.domains) set.add(d);
+  return [...set].sort((a, b) => a.localeCompare(b));
+}
+
+/** Circle radius for the anchors; grows with the number of domains. */
+export function anchorRadius(count: number): number {
+  return count <= 1 ? 0 : Math.max(260, 110 * count);
+}
+
+/** Fixed anchor per domain, evenly spaced on a circle, first one at the top. */
+export function computeAnchors(domains: string[]): Map<string, Point> {
+  const r = anchorRadius(domains.length);
+  const anchors = new Map<string, Point>();
+  if (r === 0) {
+    for (const d of domains) anchors.set(d, { x: 0, y: 0 });
+    return anchors;
+  }
+  domains.forEach((d, i) => {
+    const angle = -Math.PI / 2 + (2 * Math.PI * i) / domains.length;
+    anchors.set(d, { x: r * Math.cos(angle), y: r * Math.sin(angle) });
+  });
+  return anchors;
+}
+
+/** Weighted average of points. Falls back to equal weights if all weights are 0. */
+export function weightedMidpoint(items: { point: Point; weight: number }[]): Point {
+  if (items.length === 0) return { x: 0, y: 0 };
+  const positive = items.reduce((s, i) => s + Math.max(0, i.weight), 0);
+  const w = (i: { weight: number }) => (positive > 0 ? Math.max(0, i.weight) : 1);
+  const total = positive > 0 ? positive : items.length;
+  return {
+    x: items.reduce((s, i) => s + i.point.x * w(i), 0) / total,
+    y: items.reduce((s, i) => s + i.point.y * w(i), 0) / total,
+  };
+}
+
+/**
+ * How strongly a node belongs to each of its domains: 1 each, plus 1 for every
+ * neighbour in that domain. A bridge node with more biology links sits nearer biology.
+ */
+export function domainWeights(
+  node: GraphNode,
+  edges: GraphEdge[],
+  byId: Map<string, GraphNode>,
+): Record<string, number> {
+  const weights: Record<string, number> = {};
+  for (const d of node.domains) weights[d] = 1;
+  for (const e of edges) {
+    const otherId = e.from === node.id ? e.to : e.to === node.id ? e.from : null;
+    const other = otherId ? byId.get(otherId) : undefined;
+    if (!other) continue;
+    for (const d of other.domains) if (d in weights) weights[d] += 1;
+  }
+  return weights;
+}
+
+/** Where a node is pulled to, and how hard. Bridge nodes sit between their islands. */
+export function nodeAnchor(
+  node: Pick<GraphNode, 'domains'>,
+  anchors: Map<string, Point>,
+  weights: Record<string, number> = {},
+): Point & { strength: number } {
+  const known = node.domains.filter((d) => anchors.has(d));
+  if (known.length === 0) return { x: 0, y: 0, strength: BRIDGE_STRENGTH };
+  if (known.length === 1) return { ...anchors.get(known[0])!, strength: ANCHOR_STRENGTH };
+  const mid = weightedMidpoint(known.map((d) => ({ point: anchors.get(d)!, weight: weights[d] ?? 1 })));
+  return { ...mid, strength: BRIDGE_STRENGTH };
+}
+
+/** True when two nodes share no domain. */
+export function isCrossDomain(a: Pick<GraphNode, 'domains'>, b: Pick<GraphNode, 'domains'>): boolean {
+  return !a.domains.some((d) => b.domains.includes(d));
+}
+
+/** A node plus its direct neighbours and the edges between them (for hover). */
+export function neighborhood(edges: GraphEdge[], id: string): { nodes: Set<string>; edges: Set<string> } {
+  const nodes = new Set([id]);
+  const edgeIds = new Set<string>();
+  for (const e of edges) {
+    if (e.from === id || e.to === id) {
+      nodes.add(e.from);
+      nodes.add(e.to);
+      edgeIds.add(e.id);
+    }
+  }
+  return { nodes, edges: edgeIds };
+}
+
+/** Centre of each island from single-domain node positions; the anchor if none are placed. */
+export function islandCentroids(nodes: CanvasNode[], anchors: Map<string, Point>): Map<string, Point> {
+  const sums = new Map<string, { x: number; y: number; n: number }>();
+  for (const node of nodes) {
+    if (node.domains.length !== 1 || !Number.isFinite(node.x) || !Number.isFinite(node.y)) continue;
+    const s = sums.get(node.domains[0]) ?? { x: 0, y: 0, n: 0 };
+    s.x += node.x!;
+    s.y += node.y!;
+    s.n += 1;
+    sums.set(node.domains[0], s);
+  }
+  const out = new Map<string, Point>();
+  for (const [d, a] of anchors) {
+    const s = sums.get(d);
+    out.set(d, s && s.n > 0 ? { x: s.x / s.n, y: s.y / s.n } : a);
+  }
+  return out;
+}
+
+/** Turn a World into canvas nodes and links. Edges pointing at missing nodes are dropped. */
+export function toGraphData(world: World): CanvasGraph {
+  const domains = allDomains(world);
+  const anchors = computeAnchors(domains);
+  const colors = new Map(domains.map((d, i) => [d, DOMAIN_PALETTE[i % DOMAIN_PALETTE.length]]));
+  const byId = new Map(world.nodes.map((n) => [n.id, n]));
+  const edges = world.edges.filter((e) => byId.has(e.from) && byId.has(e.to) && e.from !== e.to);
+
+  // Start each node on a small spiral around its anchor so the first frame already shows islands.
+  const perAnchor = new Map<string, number>();
+  const nodes: CanvasNode[] = world.nodes.map((n) => {
+    const a = nodeAnchor(n, anchors, domainWeights(n, edges, byId));
+    const key = `${Math.round(a.x)},${Math.round(a.y)}`;
+    const k = perAnchor.get(key) ?? 0;
+    perAnchor.set(key, k + 1);
+    const angle = k * 2.39996; // golden angle
+    const r = 14 * Math.sqrt(k + 1);
+    return {
+      ...n,
+      anchorX: a.x,
+      anchorY: a.y,
+      anchorStrength: a.strength,
+      color: colors.get(n.domains[0]) ?? NEUTRAL_COLOR,
+      strokeColor: n.domains.length > 1 ? (colors.get(n.domains[1]) ?? null) : null,
+      x: a.x + r * Math.cos(angle),
+      y: a.y + r * Math.sin(angle),
+    };
+  });
+
+  // Links touching a bridge node also count as cross links, so bridges stretch between
+  // islands instead of dragging an island's own nodes toward the middle.
+  const links: CanvasLink[] = edges.map((e) => {
+    const a = byId.get(e.from)!;
+    const b = byId.get(e.to)!;
+    const touchesBridge = a.domains.length > 1 || b.domains.length > 1;
+    return { id: e.id, source: e.from, target: e.to, edge: e, cross: touchesBridge || isCrossDomain(a, b) };
+  });
+
+  return { nodes, links, domains, anchors, colors };
+}
