@@ -52,3 +52,43 @@ export function settleLayout(graph: CanvasGraph, ticks = 300): CanvasGraph {
   for (let i = 0; i < ticks; i++) sim.tick();
   return graph;
 }
+
+/** Remember where every node came to rest; the drift force sways nodes around these spots. */
+export function captureHomes(nodes: CanvasNode[]): void {
+  for (const n of nodes) {
+    if (Number.isFinite(n.x) && Number.isFinite(n.y)) {
+      n.homeX = n.x;
+      n.homeY = n.y;
+    }
+  }
+}
+
+export interface DriftOptions {
+  amp?: number; // how far a node sways from home, in graph units
+  period?: number; // ms for one slow sway
+  pull?: number; // how firmly a node follows its moving target
+}
+
+/**
+ * A slow, fluid sway: each settled node follows a target that circles its home spot. The phase
+ * comes from the node's position, so neighbours move together like a current through water.
+ * It ignores the simulation's cooling, so it keeps going after the layout has settled.
+ */
+export function makeDriftForce(now: () => number, { amp = 4, period = 9000, pull = 0.02 }: DriftOptions = {}) {
+  let nodes: CanvasNode[] = [];
+  const force = () => {
+    const w = (2 * Math.PI * now()) / period;
+    for (const n of nodes) {
+      if (n.homeX === undefined || n.homeY === undefined || n.x === undefined || n.y === undefined) continue;
+      const phase = n.homeX * 0.011 + n.homeY * 0.007;
+      const tx = n.homeX + amp * Math.sin(w + phase) + amp * 0.45 * Math.sin(w * 0.61 + phase * 1.7);
+      const ty = n.homeY + amp * Math.cos(w * 0.83 + phase) + amp * 0.45 * Math.cos(w * 0.47 + phase * 1.3);
+      n.vx = (n.vx ?? 0) + (tx - n.x) * pull;
+      n.vy = (n.vy ?? 0) + (ty - n.y) * pull;
+    }
+  };
+  force.initialize = (ns: CanvasNode[]) => {
+    nodes = ns;
+  };
+  return force;
+}

@@ -11,3 +11,7 @@ The PRD section 5A says a search match highlights itself plus all transitive pre
 - Islands must not move when Focus is on or off (anchors are computed from ALL domains, never the visible set). Turning Focus off or clearing the search restores the full graph.
 - Accessibility: the toggle is a real switch (role="switch" or a checkbox), 44px target, announced to screen readers ("Focus on, showing 8 of 130 items"). The Outline view uses the same search and the same toggle.
 - Implement the visible-set logic as a pure, tested function in src/lib/graph (for example visibleNodeIds(world, matchId, {focus, depth})).
+
+- 2026-11-07 (Person A): Map look changed from the Figma/"transit map" drafts to an abstract constellation: small subject-coloured dots, white bridge dots, faint links, names only on hover, gentle drift after settling. The PRD's d3-force island layout and fixed anchors are kept (anchors now on a wide ellipse, first subject at the bottom).
+- 2026-11-07 (Person A): Fonts changed from Geist (PRD: Inter or Geist) to Host Grotesk + JetBrains Mono, per the taste skill. UI text on the map page and the nav is lowercase; the nav calls /world "map".
+- 2026-11-07 (Person A): Entire transcripts stay on each laptop (push_sessions=false) because the GitHub repo is public.

@@ -10,7 +10,7 @@ import GraphLegend from './GraphLegend';
 // The graph library needs the browser's canvas, so it is never rendered on the server.
 const GraphCanvas = dynamic(() => import('./GraphCanvas'), {
   ssr: false,
-  loading: () => <p className="text-lg text-zinc-300">Loading the canvas…</p>,
+  loading: () => <p className="absolute inset-0 grid place-items-center text-ink-muted">drawing your map…</p>,
 });
 
 type State = { kind: 'loading' } | { kind: 'error'; message: string } | { kind: 'ready'; world: World };
@@ -46,31 +46,30 @@ export default function WorldView() {
     setAttempt((a) => a + 1);
   }, []);
 
+  // No page title: the map simply fills the screen. Loading and errors sit in its centre.
   if (state.kind === 'loading') {
     return (
-      <p role="status" className="text-lg text-zinc-300">
-        Loading your world…
+      <p role="status" className="map-loading absolute inset-0 grid place-items-center text-ink-muted">
+        drawing your map…
       </p>
     );
   }
   if (state.kind === 'error') {
     return (
-      <div role="alert" className="flex flex-col items-start gap-3 text-lg">
-        <p>We couldn&apos;t load your world. {state.message}</p>
-        <button
-          type="button"
-          onClick={retry}
-          className="min-h-11 rounded-md border border-zinc-600 bg-zinc-900 px-4 hover:bg-zinc-800 focus-visible:outline focus-visible:outline-3 focus-visible:outline-offset-2 focus-visible:outline-amber-300"
-        >
-          Try again
-        </button>
+      <div role="alert" className="absolute inset-0 grid place-items-center px-6">
+        <div className="flex max-w-[40ch] flex-col items-center gap-4 text-center">
+          <p>we couldn&apos;t load your map. {state.message.toLowerCase()}</p>
+          <button type="button" onClick={retry} className="btn">
+            try again
+          </button>
+        </div>
       </div>
     );
   }
   return (
     <>
-      <GraphLegend world={state.world} />
       <GraphCanvas world={state.world} />
+      <GraphLegend world={state.world} />
     </>
   );
 }
