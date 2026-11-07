@@ -1,15 +1,15 @@
-// Shared by the API routes: the user's world, or the Sample University fixture in demo mode / when empty.
+// Shared by the API routes: the user's world, or the Sample University demo world.
 import { getDemoWorld } from '../fixtures/demoWorld';
+import { demoSampleIds, demoWorld, isDemoRequest } from '../lib/demo';
 import type { World } from '../types';
 import { getUserId } from '../lib/user';
 import { getWorldForUser } from './queries';
 
-export function isDemoRequest(request: Request): boolean {
-  return process.env.DEMO === '1' || new URL(request.url).searchParams.get('demo') === '1';
-}
+export { isDemoRequest };
 
 export async function loadWorld(request: Request): Promise<World> {
-  if (isDemoRequest(request)) return getDemoWorld(new Date());
+  // Demo mode never touches the database.
+  if (isDemoRequest(request)) return demoWorld(new Date(), demoSampleIds(request));
   const world = await getWorldForUser(await getUserId());
   return world.nodes.length === 0 ? getDemoWorld(new Date()) : world;
 }

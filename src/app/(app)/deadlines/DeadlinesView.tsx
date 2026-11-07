@@ -19,15 +19,15 @@ export default function DeadlinesView() {
   const [world, setWorld] = useState<World | null>(null);
   const [error, setError] = useState('');
   const [now, setNow] = useState<Date | null>(null);
-  const [search, setSearch] = useState('');
 
   useEffect(() => {
-    const q = window.location.search.includes('demo=1') ? '?demo=1' : '';
-    setSearch(q);
-    setNow(new Date());
-    fetch(`/api/world${q}`)
+    // Demo mode is remembered in a cookie by the demo badge, so no query string is needed.
+    fetch('/api/world')
       .then((r) => (r.ok ? r.json() : Promise.reject()))
-      .then(setWorld)
+      .then((w) => {
+        setWorld(w);
+        setNow(new Date());
+      })
       .catch(() => setError('We could not load your deadlines. Refresh the page, or add ?demo=1 to the address to use demo mode.'));
   }, []);
 
@@ -40,7 +40,7 @@ export default function DeadlinesView() {
   return (
     <div className="mt-4 space-y-8">
       <div className="flex flex-wrap items-center gap-4">
-        <a href={`/api/deadlines.ics${search}`} download="atlas-deadlines.ics" className={`${linkButton} bg-blue-700 text-white`}>
+        <a href="/api/deadlines.ics" download="atlas-deadlines.ics" className={`${linkButton} bg-blue-700 text-white`}>
           Download calendar file (.ics)
         </a>
         <p className="max-w-prose">Every deadline with a date, with a reminder one day before.</p>

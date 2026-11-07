@@ -24,6 +24,8 @@ export default function UploadFlow() {
   const [draft, setDraft] = useState<ExtractionDraft | null>(null);
   const [cached, setCached] = useState(false);
   const [savedMessage, setSavedMessage] = useState('');
+  const [samples, setSamples] = useState<{ id: string; title: string; text: string; course: { code: string; title: string; domain: string; term: string; year: number } }[]>([]);
+  const [sampleId, setSampleId] = useState<string | null>(null);
   const touched = useRef({ code: false, title: false, term: false, year: false });
   const errorRef = useRef<HTMLDivElement>(null);
 
@@ -34,6 +36,27 @@ export default function UploadFlow() {
       .then((w) => w && setDomains([...new Set<string>(w.courses.map((c: { domain: string }) => c.domain))]))
       .catch(() => {});
   }, []);
+
+  // In demo mode, offer the three sample syllabi (their recorded AI responses replay with no network).
+  useEffect(() => {
+    fetch('/api/demo')
+      .then((r) => (r.ok ? r.json() : null))
+      .then((d) => d?.samples && setSamples(d.samples))
+      .catch(() => {});
+  }, []);
+
+  function chooseSample(id: string) {
+    const s = samples.find((x) => x.id === id);
+    if (!s) return;
+    touched.current = { code: true, title: true, term: true, year: true };
+    setMode('text');
+    setText(s.text);
+    setCode(s.course.code);
+    setTitle(s.course.title);
+    setDomain(s.course.domain);
+    setTerm(s.course.term);
+    setYear(String(s.course.year));
+  }
 
   // Fill empty course fields with guesses from the pasted text.
   useEffect(() => {
@@ -69,6 +92,7 @@ export default function UploadFlow() {
       const data = await res.json();
       if (!res.ok) throw new Error(data.error ?? 'Something went wrong.');
       setDraft(data.draft);
+      setSampleId(data.sampleId ?? null);
       setCached(Boolean(data.cached));
       setStep('review');
     } catch (err) {
@@ -80,7 +104,7 @@ export default function UploadFlow() {
 
   async function confirm(final: ExtractionDraft): Promise<string | null> {
     try {
-      const res = await fetch('/api/ingest/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft: final }) });
+      const res = await fetch('/api/ingest/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft: final, sampleId }) });
       const data = await res.json();
       if (!res.ok) return data.error ?? 'We could not save that.';
       const added: number = data.linking?.added ?? 0;
@@ -108,6 +132,15 @@ export default function UploadFlow() {
         <form onSubmit={submit} className="space-y-6" aria-busy={step === 'loading'}>
           <fieldset className="space-y-3">
             <legend className="text-xl font-semibold">1. Your document</legend>
+            {samples.length > 0 && (
+              <div>
+                <label htmlFor="sample" className="font-medium">Use a sample syllabus (demo mode)</label>
+                <select id="sample" defaultValue="" onChange={(e) => chooseSample(e.target.value)} className={field}>
+                  <option value="" disabled>Choose a sample…</option>
+                  {samples.map((s) => <option key={s.id} value={s.id}>{s.title}</option>)}
+                </select>
+              </div>
+            )}
             <div className="flex flex-wrap gap-6">
               <label className="flex min-h-11 items-center gap-2">
                 <input type="radio" name="mode" checked={mode === 'text'} onChange={() => setMode('text')} className="size-5" /> Paste text
