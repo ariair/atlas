@@ -105,3 +105,12 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - /outline still exists as a stand-alone page (same panel). The nav link was removed.
 - Tested: 209 unit tests; real browser run (search with a typo, Focus 8 / 24 of 78, filters, Outline toggle moves focus to the Outline heading); axe: no violations on the map page in map mode and outline mode, dark/light x default/all accessibility options.
 - Note: after pulling these changes, restart `npm run dev` if the map page sticks on "drawing your map" (stale dev compile).
+
+## 2026-11-07: AI tutor backend (Person B, in Person A's api/study|quiz|grade at the user's request)
+- Added `POST /api/study`, `/api/quiz`, `/api/grade` and `src/lib/tutor/*` (schemas, context, conceptMap, generate, grade, offline, spend). Schemas live in `src/lib/tutor/schemas.ts`, not the shared schemas file.
+- Server looks nodes up itself and adds accepted prerequisites (3 steps, max 15); the browser never sends course text. Concept map is a Mermaid flowchart built by code, labels sanitised, with alt text.
+- Study guide is structured fields (not Markdown) so the screen renders plain text. Quiz questions carry mark schemes (rubric must add up). Choice questions are marked in code, written answers by `MODELS.fast`; student text is wrapped as untrusted data. Mastery per node = quiz score, averaged with the earlier score, saved for logged-in users.
+- Demo mode builds guide/quiz/marking offline from node summaries (no AI, labelled "Demo sample"). No AI demo recordings yet.
+- Each guide/quiz and each written answer marked counts against the daily AI limit.
+- Tested: 225 tests, one real Haiku run (guide, 4 quiz styles, injection attempt scored 0/2). Not tested: saving mastery to the database, Mermaid validation/repair.
+- Person A: new routes are in your folders; the study and quiz screens are still to build.
