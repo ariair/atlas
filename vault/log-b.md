@@ -133,3 +133,9 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - Log out uses Auth0 `logoutStrategy: 'v2'` and `?returnTo=/`, so it goes straight to the home page instead of an Auth0 page.
 - Shared file touched: `src/db/schema.ts` (users.username). Run `npm run db:migrate` before relying on usernames.
 - Tested: tsc, lint, unit tests, build. Not tested logged in against real Auth0.
+
+## 2026-11-07: Username/log out fixes (Person B)
+- Required username box now renders once, in a portal on <body> (the nav's blur had clipped it, and the nav mounts the menu twice).
+- Log out: removed `?returnTo=/` (Auth0 rejects a relative address); it returns to APP_BASE_URL by default.
+- Drop-down "user settings" links to /settings#account for now; Person A builds that section and needs a username editor there (`PUT /api/account` with `{ username }`).
+- Migration 0002 applied to the live database.

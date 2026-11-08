@@ -3,11 +3,15 @@
 // [auth] The logged-in person's username in the nav. Press it for a small drop-down: change username, log out.
 // A person with no username yet (new sign-ups, and accounts from before usernames) gets a required prompt first.
 // Person A restyles this; the logic (GET/PUT /api/account) stays.
-import { useCallback, useEffect, useRef, useState } from 'react';
+import { useCallback, useEffect, useId, useRef, useState } from 'react';
+import Link from 'next/link';
+import { createPortal } from 'react-dom';
 
 type Account = { username: string | null; email: string | null };
 
 function UsernameForm({ initial, required, onSaved }: { initial: string; required: boolean; onSaved: (u: string) => void }) {
+  const inputId = useId();
+  const hintId = `${inputId}-hint`;
   const [value, setValue] = useState(initial);
   const [error, setError] = useState('');
   const [busy, setBusy] = useState(false);
@@ -34,11 +38,11 @@ function UsernameForm({ initial, required, onSaved }: { initial: string; require
 
   return (
     <form onSubmit={save} className="flex flex-col gap-2">
-      <label htmlFor="username-input" className="text-ink-muted">
+      <label htmlFor={inputId} className="text-ink-muted">
         {required ? 'choose a username' : 'username'}
       </label>
       <input
-        id="username-input"
+        id={inputId}
         className="field"
         value={value}
         onChange={(e) => setValue(e.target.value)}
@@ -47,11 +51,11 @@ function UsernameForm({ initial, required, onSaved }: { initial: string; require
         spellCheck={false}
         maxLength={21}
         required
-        aria-describedby="username-hint"
+        aria-describedby={hintId}
         aria-invalid={!!error}
         autoFocus={required}
       />
-      <p id="username-hint" className="text-ink-muted">
+      <p id={hintId} className="text-ink-muted">
         3 to 20 letters, numbers or underscores. it must be unique.
       </p>
       {error && (
@@ -71,7 +75,6 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
   const [account, setAccount] = useState<Account | null>(null);
   const [failed, setFailed] = useState(false);
   const [open, setOpen] = useState(false);
-  const [editing, setEditing] = useState(false);
   const ref = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
@@ -83,7 +86,6 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
 
   const close = useCallback(() => {
     setOpen(false);
-    setEditing(false);
   }, []);
   useEffect(() => {
     if (!open) return;
@@ -98,7 +100,7 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
   }, [open, close]);
 
   if (!account && !failed) return null;
-  const needsName = account !== null && account.username === null;
+  const needsName = variant === 'inline' && account !== null && account.username === null;
   const saved = (username: string) => {
     setAccount({ email: account?.email ?? null, username });
     close();
@@ -111,16 +113,13 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
       {account?.email && <p className="truncate px-3 pb-1 text-ink-muted">{account.email}</p>}
       {failed ? (
         <p className="px-3 pb-1 text-ink-muted">account details did not load. try again later.</p>
-      ) : editing ? (
-        <div className="px-1 pb-2">
-          <UsernameForm initial={account?.username ?? ''} required={false} onSaved={saved} />
-        </div>
       ) : (
-        <button type="button" className={row} onClick={() => setEditing(true)}>
+        // For now this opens the account section of the settings page (Person A builds that section).
+        <Link href="/settings#account" className={row} onClick={close}>
           user settings
-        </button>
+        </Link>
       )}
-      <a href="/auth/logout?returnTo=%2F" className={row}>
+      <a href="/auth/logout" className={row}>
         log out
       </a>
     </div>
@@ -128,17 +127,20 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
 
   return (
     <>
-      {needsName && (
+      {needsName &&
+        // Portal to <body>: the nav's blur makes it the anchor for "fixed", which would clip the box.
+        createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
           <div role="dialog" aria-modal="true" aria-label="choose a username" className="w-full max-w-sm rounded-xl border border-white/10 bg-surface p-5">
             <h2 className="mb-3 text-lg font-medium">welcome to atlas</h2>
             <UsernameForm initial="" required onSaved={saved} />
-            <a href="/auth/logout?returnTo=%2F" className="btn mt-2 w-full rounded-full border-transparent bg-transparent">
+            <a href="/auth/logout" className="btn mt-2 w-full rounded-full border-transparent bg-transparent">
               log out
             </a>
           </div>
-        </div>
-      )}
+        </div>,
+        document.body,
+        )}
       {variant === 'menu' ? (
         <div className="w-full">
           <p className="mb-1 px-3 font-medium">{account?.username ?? 'account'}</p>
