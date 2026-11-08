@@ -1,15 +1,21 @@
 import type { StudyResponse } from '@/lib/tutor/schemas';
-import { h2, panel } from './styles';
+import { printSheet } from './printSheet';
+import { button, h2, panel } from './styles';
 
 // Everything is rendered as plain text (no HTML from the AI is ever inserted).
 // The concept map is shown as a text list for now; `study.conceptMap.mermaid` holds a Mermaid flowchart if you add a diagram renderer.
-export default function GuideView({ study }: { study: StudyResponse }) {
+export default function GuideView({ study, fileName }: { study: StudyResponse; fileName: string }) {
   const { guide, conceptMap, usedNodes } = study;
   return (
     <section aria-labelledby="guide-h" className={`${panel} space-y-6`}>
-      <div>
-        <h2 id="guide-h" className={h2}>study guide</h2>
-        <p className="mt-1 text-base text-ink-muted">{study.note}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="guide-h" className={h2}>study guide</h2>
+          <p className="mt-1 text-base text-ink-muted">{study.note}</p>
+        </div>
+        <button type="button" className={`${button} rounded-full`} onClick={() => printSheet('guide', `${fileName} study guide`)}>
+          Download PDF
+        </button>
       </div>
       <p>{guide.overview}</p>
 
