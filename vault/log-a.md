@@ -97,3 +97,8 @@
 - Node card on phones: max 44% of the screen height, title and close button stick to the top while it scrolls; height is also capped so the card never goes under the nav bar.
 - Not done: re-link the existing real Quiz 0 (use the new box, or a one-off script); record a Quiz 0 result so the Sample University demo shows it linked; ask-the-user prompts during upload review.
 - Edits in Person B's files: `db/linking.ts`, `db/queries.ts`, `lib/ingest/link.ts`, `lib/ingest/link.test.ts`, new `app/api/nodes/[id]/relink/route.ts`. B please be told.
+
+## 2026-11-08: Add an assignment to a course by hand (Person A, in Person B's deadlines page and API at the user's request)
+- Deadlines page: an "Add assignment" button opens a form (course, name, type, due date, weight %, optional "what does it cover?"). `DeadlinesView.tsx` `AddDeadline`; the new row shows without reloading.
+- New `POST /api/deadlines` (`app/api/deadlines/route.ts`) and pure builder `lib/newAssignment.ts` (tested in `newAssignment.test.ts`): creates a map node (midterm/final = exam, everything else = assignment) plus a deadline pointing at it; no date means "needs review". If the student says what it covers, `relinkNode` runs so Atlas suggests links to the ideas it could test (a bonus: failure does not fail the save). Demo mode saves nothing and keeps the item in memory.
+- Not tested against the real database or live Claude. Edits in Person B's files: B please be told.
