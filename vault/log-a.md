@@ -40,3 +40,6 @@
 ## 2026-11-07: Merge with main, PR #10 (Person A)
 - Merged main (settings, light theme, Auth0). Nav conflict resolved: kept the fluid nav and sliding bubble; Person B's `AuthLinks.tsx` now also builds the narrow-window account drop-down, and shows log in / sign up as inactive buttons until Auth0 is configured.
 - Opened PR #10 (a/canvas into main). Person B's logo-files commit (2562c17) is still only on b/ingest.
+
+## Sync point (Person A)
+- PR #10 merged into main (nav, landing, map, palette, detail card, Auth0 links folded into the nav). Next: Person B's 3A work (search, filters, Outline) will need a merge of main into b/ingest; expect conflicts in GraphCanvas.tsx and WorldView.tsx.
