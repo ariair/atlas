@@ -98,6 +98,14 @@ function ReadyWorld({ world, onReload }: { world: World; onReload: () => Promise
   const searchBox = useRef<HTMLDivElement>(null);
   const outlineTop = useRef<HTMLHeadingElement>(null);
 
+  // Escape closes the search and filters panel.
+  useEffect(() => {
+    if (!panelOpen) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setPanelOpen(false);
+    document.addEventListener('keydown', onKey);
+    return () => document.removeEventListener('keydown', onKey);
+  }, [panelOpen]);
+
   const showOutline = () => {
     setMode('outline');
     setTimeout(() => outlineTop.current?.focus(), 0);
@@ -161,17 +169,26 @@ function ReadyWorld({ world, onReload }: { world: World; onReload: () => Promise
             focused on {view.activeNode.label} · {view.shownCount} of {view.totalCount}
           </span>
         )}
-      </div>
 
-      {/* Always mounted so it can animate out; .pop-panel hides it (and takes it out of the tab order) while closed. */}
-      <div
-        id="search-panel"
-        ref={searchBox}
-        data-open={panelOpen}
-        style={{ '--pop-origin': '0% 0%' } as React.CSSProperties}
-        className="pop-panel absolute left-3 top-[4.25rem] z-30 max-h-[calc(100%-6rem)] w-[min(28rem,calc(100%-1.5rem))] overflow-auto rounded-xl border border-white/10 bg-surface/90 p-4 backdrop-blur-md"
-      >
-        <SearchFilterBar view={view} />
+        {/* Always mounted so it can animate out; .pop-panel hides it (and takes it out of the tab order) while closed.
+            It hangs below the whole toolbar, however many rows the toolbar wraps to, so it can never cover the button that closes it. */}
+        <div
+          id="search-panel"
+          ref={searchBox}
+          data-open={panelOpen}
+          style={{ '--pop-origin': '0% 0%' } as React.CSSProperties}
+          className="pop-panel absolute left-0 top-full z-30 mt-2 max-h-[min(60dvh,32rem)] w-[min(28rem,calc(100vw-1.5rem))] overflow-auto overscroll-contain rounded-xl border border-white/10 bg-surface/95 p-4 backdrop-blur-md"
+        >
+          <div className="sticky -top-4 z-10 -mx-4 -mt-4 mb-2 flex items-center justify-between gap-3 bg-surface px-4 pb-2 pt-3">
+            <h2 className="text-ink-muted">search &amp; filters</h2>
+            <button type="button" className="map-btn shrink-0" onClick={() => setPanelOpen(false)} aria-label="Close search and filters">
+              <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2" strokeLinecap="round" aria-hidden="true">
+                <path d="M6 6l12 12M18 6L6 18" />
+              </svg>
+            </button>
+          </div>
+          <SearchFilterBar view={view} />
+        </div>
       </div>
 
       {mode === 'outline' && (

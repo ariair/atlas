@@ -102,3 +102,12 @@
 - Deadlines page: an "Add assignment" button opens a form (course, name, type, due date, weight %, optional "what does it cover?"). `DeadlinesView.tsx` `AddDeadline`; the new row shows without reloading.
 - New `POST /api/deadlines` (`app/api/deadlines/route.ts`) and pure builder `lib/newAssignment.ts` (tested in `newAssignment.test.ts`): creates a map node (midterm/final = exam, everything else = assignment) plus a deadline pointing at it; no date means "needs review". If the student says what it covers, `relinkNode` runs so Atlas suggests links to the ideas it could test (a bonus: failure does not fail the save). Demo mode saves nothing and keeps the item in memory.
 - Not tested against the real database or live Claude. Edits in Person B's files: B please be told.
+
+## 2026-11-08: Two phone fixes (Person A, one in Person B's search wiring)
+- Study page (`app/(app)/study/StudyScreen.tsx`): the class, topic and related-topic lists are grids whose items could not shrink below their text, so a long course name pushed the rows past the card's right edge. The columns are now `minmax(0, 1fr)` and the list items `min-w-0`, so long names cut off with "…" inside the box.
+- Map filter panel (`components/graph/WorldView.tsx`, `[search]`): the panel sat at a fixed top offset, but the toolbar wraps onto two rows on phones, so the panel covered the "search & filters" button and could not be closed. It now hangs under the whole toolbar (`top-full`), is at most 60% of the screen height, has a pinned header with an X, and Escape closes it.
+- Also synced: merged Person B's PR 25 (search keeps the selected node after "update links"), PR 26 (`vercel.json`: no preview deploys for a/canvas and b/ingest) and PR 27 (notes to an existing class, "Study for this" on deadlines). Merged cleanly alongside my Add assignment form and quiz linking.
+- Figma: drew the new landing page, node card (closed and open) and Add assignment form as new frames next to the old ones; the user then edited them into bracket-placeholder templates and asked me not to change the file (saved as a memory note).
+
+## 2026-11-08: CLAUDE.md refresh (Person A)
+- Updated CLAUDE.md: deploy note (merging to main should deploy by itself), relink and Add assignment in the ingest and pages notes, node card and filter panel details, Figma templates are the design basis.
