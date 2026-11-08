@@ -36,3 +36,7 @@
 - Pause/resume no longer spreads the map: after settling, the layout forces are removed and only the drift moves dots.
 - Nav is fluid (clamped spacing); below 640px log in and sign up fold into an account drop-down; skip link only shows on keyboard focus (it used to overlap the demo banner).
 - Not touched: Person B's `DemoBadge.tsx` (light-blue banner still clashes with the dark look).
+
+## 2026-11-07: Merge with main, PR #10 (Person A)
+- Merged main (settings, light theme, Auth0). Nav conflict resolved: kept the fluid nav and sliding bubble; Person B's `AuthLinks.tsx` now also builds the narrow-window account drop-down, and shows log in / sign up as inactive buttons until Auth0 is configured.
+- Opened PR #10 (a/canvas into main). Person B's logo-files commit (2562c17) is still only on b/ingest.
