@@ -29,3 +29,10 @@
 - Merged main (Person B's settings page and light theme). Only conflict was GraphLegend; kept B's `toneFor` and theme variables.
 - Open: "Cell structure" and "Membranes and transport" have no links to the rest of biology, so they sit alone at the biology anchor at the bottom of the map (fix in forces.ts or add a link in the demo data).
 - Not done: upload and deadlines redesign (Person B's folders), sign-in/up pages, Figma.
+
+## 2026-11-07: Polish pass (Person A)
+- Homepage map: dots lean toward the pointer (max 3px) instead of fleeing, and calm under it, so the middle dot can be hovered.
+- Layout: groups of up to 3 ideas linked only to each other have their anchor pulled 30% toward the map centre (`SMALL_GROUP_PULL`), so the two lone biology dots sit nearer the middle but still apart.
+- Pause/resume no longer spreads the map: after settling, the layout forces are removed and only the drift moves dots.
+- Nav is fluid (clamped spacing); below 640px log in and sign up fold into an account drop-down; skip link only shows on keyboard focus (it used to overlap the demo banner).
+- Not touched: Person B's `DemoBadge.tsx` (light-blue banner still clashes with the dark look).
