@@ -1,6 +1,6 @@
 import { z } from 'zod';
 import { ExtractionDraftSchema } from '@/lib/schemas';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 import { AIError } from '@/lib/ai/client';
 import { consumeAiCall, getCachedDraft, saveCachedDraft } from '@/db/queries';
 import { LIMITS, contentHash, countPdfPages, extractDraft } from '@/lib/ingest/extract';
@@ -61,7 +61,14 @@ export async function POST(request: Request) {
     return fail('Paste your syllabus text or choose a PDF.', 400);
   }
 
-  const userId = await getUserId();
+  let userId: string;
+  try {
+    userId = await getUserId();
+  } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
+    throw err;
+  }
   const hash = contentHash({ course, text, pdf });
 
   try {
@@ -80,6 +87,8 @@ export async function POST(request: Request) {
     await saveCachedDraft(userId, hash, filename, draft); // structure only, never the file
     return Response.json({ draft, cached: false });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     if (err instanceof AIError) return fail(err.message, 502);
     console.error('[ingest] failed:', err instanceof Error ? err.message : 'unknown');
     return fail('Something went wrong reading that document. Try again, or paste the text instead.', 500);

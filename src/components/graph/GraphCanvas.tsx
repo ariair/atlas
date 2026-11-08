@@ -10,6 +10,7 @@ import ForceGraph2D, { type ForceGraphMethods, type LinkObject, type NodeObject 
 import type { ForceLink } from 'd3-force';
 import type { NodeType, World } from '@/types';
 import { neighborhood, toGraphData, type CanvasLink, type CanvasNode } from '@/lib/graph/layout';
+import NodeDetail from './NodeDetail';
 import { captureHomes, configureLinkForce, makeDriftForce, makeForces, settleLayout } from '@/lib/graph/forces';
 // [settings] Display settings (theme, node names, hidden subjects, motion) come from Settings; see src/lib/settings.ts.
 import { shortLabel, toneFor } from '@/lib/graph/tone';
@@ -20,9 +21,9 @@ type FGLink = LinkObject<CanvasNode, CanvasLink>;
 type FGMethods = ForceGraphMethods<FGNode, FGLink>;
 type ForceFn = Parameters<FGMethods['d3Force']>[1];
 
-export const CANVAS_BG = '#0E1116';
+export const CANVAS_BG = '#1B1B1B';
 const BONE = '#F2F0E9';
-const NEUTRAL = '#6B7686'; // links between different subjects
+const NEUTRAL = '#7D7D7D'; // links between different subjects
 const SETTLE_MS = 5000; // let the layout find its shape, then start drifting
 const FADE_MS = 60; // hover fade time constant (settles in about 180ms, per the Emil skill)
 const GLIDE_MS = 70; // name card glide time constant when moving between dots
@@ -152,6 +153,7 @@ export default function GraphCanvas({ world }: { world: World }) {
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [status, setStatus] = useState(startReduced ? 'motion is off.' : 'arranging the map…');
   const [tip, setTip] = useState<Tip | null>(null);
+  const [selectedId, setSelectedId] = useState<string | null>(null); // the dot whose detail card is open
   const [settled, setSettled] = useState(false); // after the first settle the drift runs without a time limit
 
   // With reduced motion the layout is computed up front, so nothing ever moves on screen.
@@ -211,6 +213,13 @@ export default function GraphCanvas({ world }: { world: World }) {
     const t = setTimeout(() => fgRef.current?.zoomToFit(0, fitPadding(size.width)), 150);
     return () => clearTimeout(t);
   }, [size.width, size.height]);
+
+  // Escape closes the detail card.
+  useEffect(() => {
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setSelectedId(null);
+    window.addEventListener('keydown', onKey);
+    return () => window.removeEventListener('keydown', onKey);
+  }, []);
 
   // Follow changes to the system reduced-motion setting.
   useEffect(() => {
@@ -489,6 +498,8 @@ export default function GraphCanvas({ world }: { world: World }) {
             nodeCanvasObject={paintNode}
             nodePointerAreaPaint={paintPointerArea}
             onNodeHover={onNodeHover}
+            onNodeClick={(n) => setSelectedId(n.id)}
+            onBackgroundClick={() => setSelectedId(null)}
             enableNodeDrag={false}
             linkColor={linkColor}
             linkWidth={linkWidth}
@@ -532,6 +543,7 @@ export default function GraphCanvas({ world }: { world: World }) {
           </div>
         )}
       </div>
+      <NodeDetail world={world} nodeId={selectedId} onSelect={setSelectedId} onClose={() => setSelectedId(null)} />
       {/* Screen readers hear the hovered name, and the map's status. */}
       <p aria-live="polite" className="sr-only">
         {tip ? `${tip.label}. ${tip.meta}.` : status}

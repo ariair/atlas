@@ -1,7 +1,7 @@
 import { replaceWorld } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { checkImport } from '@/lib/manage';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 const MAX_BYTES = 4 * 1024 * 1024;
 
@@ -27,6 +27,8 @@ export async function POST(request: Request) {
     const w = check.world;
     return Response.json({ ok: true, imported: { courses: w.courses.length, items: w.nodes.length, links: w.edges.length, deadlines: w.deadlines.length } });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[import] failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not load that file. Your data was not changed.' }, { status: 500 });
   }

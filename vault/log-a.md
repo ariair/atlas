@@ -19,3 +19,13 @@
 - Landing page restyled to match: hero is the real Sample University constellation (`src/lib/graph/constellation.ts`), mid-hover on Gradient descent.
 - Type: Host Grotesk + JetBrains Mono (taste skill pairing), medium-weight headings, lowercase wordmark and nav ("map", "upload", "deadlines"). Added `AppNav` to `(app)/layout.tsx` and `PRODUCT.md`.
 - Not done: Person B's light amber DueBanner doesn't match; PRD and Figma still say Geist and the old look.
+
+## 2026-11-07: Nav, landing, palette and detail card (Person A)
+- Top bar is a floating frosted pill: logo twists on hover and the "atlas" word slides out of it; links share one sliding spring bubble (no hover highlight); alerts bell opens a small box (replaces the due-soon banner); log in and sign up are inactive pills until Auth0 is wired (Person B's AuthLinks arrives with their auth branch).
+- Removed `<DueBanner />` from the shared `(app)/layout.tsx`; `DueBanner.tsx` itself is untouched. Person B please know.
+- Landing: hero map is live (dots drift, ease away from the cursor, map leans toward it; still with reduced motion) with a panning dot grid, drifting glows and floating shapes behind the text. Component: `components/graph/HeroMap.tsx`.
+- Map key and alerts share a popover look (`.pop-panel`, `.pop-item` in globals.css). Clicking a dot opens `NodeDetail`: what it is, know-this-first, leads-to, related, and deadline details (due, weight, priority read from weight; there is no priority field).
+- Palette: grey UI (#252525, #545454, #7D7D7D, #CFCFCF on #1B1B1B). Subject colours softened from Okabe-Ito (#E3A93D, #78B4DE, #3DAE8C, ...) in `DOMAIN_PALETTE`; logo, landing and map follow it. Needs a colour-blind check.
+- Merged main (Person B's settings page and light theme). Only conflict was GraphLegend; kept B's `toneFor` and theme variables.
+- Open: "Cell structure" and "Membranes and transport" have no links to the rest of biology, so they sit alone at the biology anchor at the bottom of the map (fix in forces.ts or add a link in the demo data).
+- Not done: upload and deadlines redesign (Person B's folders), sign-in/up pages, Figma.

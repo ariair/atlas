@@ -1,3 +1,4 @@
+import { authFailure } from '@/lib/user';
 import { connection } from 'next/server';
 import { loadWorld } from '@/db/loadWorld';
 import { dueWithin } from '@/lib/deadlines';
@@ -12,6 +13,8 @@ export async function GET(request: Request) {
     const items = dueWithin(world.deadlines, world.courses, new Date(), days);
     return Response.json({ days, count: items.length, items });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[deadlines/due] failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'Could not load deadlines.' }, { status: 500 });
   }

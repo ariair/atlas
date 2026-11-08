@@ -1,7 +1,7 @@
 import { deleteCourse, updateCourse } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { CoursePatchSchema } from '@/lib/manage';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 const demoBlocked = () => Response.json({ error: 'Demo mode is read-only for courses.' }, { status: 403 });
 
@@ -16,6 +16,8 @@ export async function PATCH(request: Request, ctx: RouteContext<'/api/courses/[i
     const r = await updateCourse(await getUserId(), id, body.data);
     return r.status === 'ok' ? Response.json({ ok: true, course: r.course }) : Response.json({ error: 'That course was not found.' }, { status: 404 });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[courses] update failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not save that change. Try again.' }, { status: 500 });
   }
@@ -30,6 +32,8 @@ export async function DELETE(request: Request, ctx: RouteContext<'/api/courses/[
     const r = await deleteCourse(await getUserId(), id);
     return r.status === 'ok' ? Response.json({ ok: true, removed: r.removed }) : Response.json({ error: 'That course was not found.' }, { status: 404 });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[courses] delete failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not delete that course. Try again.' }, { status: 500 });
   }

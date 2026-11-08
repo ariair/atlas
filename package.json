@@ -12,10 +12,12 @@
     "db:migrate": "tsx --env-file=.env.local src/db/migrate.ts",
     "db:seed": "tsx --env-file=.env.local src/db/seed.ts",
     "test:ai": "RUN_AI_TESTS=1 node --env-file=.env.local ./node_modules/vitest/vitest.mjs --run src/lib/ingest/samples.test.ts",
-    "demo:record": "tsx --env-file=.env.local scripts/record-demo.ts"
+    "demo:record": "tsx --env-file=.env.local scripts/record-demo.ts",
+    "db:claim": "tsx --env-file=.env.local scripts/claim-demo-data.ts"
   },
   "dependencies": {
     "@anthropic-ai/sdk": "^1.6.0",
+    "@auth0/nextjs-auth0": "^4.33.0",
     "d3-force": "^3.0.1",
     "drizzle-orm": "^0.45.4",
     "next": "16.4.5",
