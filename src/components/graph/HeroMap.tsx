@@ -8,8 +8,8 @@ import { useEffect, useRef } from 'react';
 import { BONE, type Constellation, type Dot } from '@/lib/graph/constellation';
 
 const DIM = 0.3;
-const REACH = 120; // how far from the pointer dots feel it (in the 800x520 picture's units)
-const PUSH = 26;
+const REACH = 90; // how far from the pointer dots feel it (in the 800x520 picture's units)
+const PULL = 3; // the most a dot leans toward the pointer
 
 function Shape({ d }: { d: Dot }) {
   const common = { fill: d.color, opacity: d.lit ? 1 : DIM };
@@ -49,16 +49,24 @@ export default function HeroMap({ map }: { map: Constellation }) {
     let visible = true;
 
     const field = (x: number, y: number, t: number): [number, number] => {
-      let dx = Math.sin(t * 0.0007 + y * 0.03) * 3.5 + Math.cos(t * 0.0004 + x * 0.02) * 2;
-      let dy = Math.cos(t * 0.0006 + x * 0.03) * 3.5 + Math.sin(t * 0.0005 + y * 0.02) * 2;
+      let dx = Math.sin(t * 0.0005 + y * 0.03) * 2.2 + Math.cos(t * 0.0003 + x * 0.02) * 1.2;
+      let dy = Math.cos(t * 0.0004 + x * 0.03) * 2.2 + Math.sin(t * 0.0004 + y * 0.02) * 1.2;
+      // Dots lean a hair toward the pointer instead of running from it, so you can rest the cursor
+      // on any dot (the highlighted one included) and it holds still.
       if (pointer.active) {
-        const vx = x - pointer.x;
-        const vy = y - pointer.y;
+        const vx = pointer.x - x;
+        const vy = pointer.y - y;
         const dist = Math.hypot(vx, vy);
         if (dist < REACH && dist > 0.1) {
-          const k = (1 - dist / REACH) ** 2 * PUSH;
+          const k = (1 - dist / REACH) ** 2 * PULL;
           dx += (vx / dist) * k;
           dy += (vy / dist) * k;
+          // Right under the pointer a dot settles: no sway, so it stays put to be read.
+          if (dist < 22) {
+            const calm = 1 - dist / 22;
+            dx *= 1 - 0.85 * calm;
+            dy *= 1 - 0.85 * calm;
+          }
         }
       }
       return [dx, dy];
@@ -91,9 +99,9 @@ export default function HeroMap({ map }: { map: Constellation }) {
     const tick = (t: number) => {
       raf = requestAnimationFrame(tick);
       if (!visible) return;
-      pointer.lx += (pointer.tx - pointer.lx) * 0.06;
-      pointer.ly += (pointer.ty - pointer.ly) * 0.06;
-      layer?.setAttribute('transform', `translate(${(pointer.lx * 10).toFixed(2)} ${(pointer.ly * 8).toFixed(2)})`);
+      pointer.lx += (pointer.tx - pointer.lx) * 0.04;
+      pointer.ly += (pointer.ty - pointer.ly) * 0.04;
+      layer?.setAttribute('transform', `translate(${(pointer.lx * 6).toFixed(2)} ${(pointer.ly * 5).toFixed(2)})`);
       for (const g of dots) {
         const [dx, dy] = field(+g.dataset.dot!.split(',')[0], +g.dataset.dot!.split(',')[1], t);
         g.setAttribute('transform', `translate(${dx.toFixed(2)} ${dy.toFixed(2)})`);
@@ -109,8 +117,8 @@ export default function HeroMap({ map }: { map: Constellation }) {
       if (tipRef.current && f) {
         const [dx, dy] = field(f.x, f.y, t);
         const r = svg.getBoundingClientRect();
-        tipRef.current.style.marginLeft = `${((dx + pointer.lx * 10) / W) * r.width}px`;
-        tipRef.current.style.marginTop = `${((dy + pointer.ly * 8) / H) * r.height}px`;
+        tipRef.current.style.marginLeft = `${((dx + pointer.lx * 6) / W) * r.width}px`;
+        tipRef.current.style.marginTop = `${((dy + pointer.ly * 5) / H) * r.height}px`;
       }
     };
     raf = requestAnimationFrame(tick);
