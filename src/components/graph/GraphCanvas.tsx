@@ -11,6 +11,9 @@ import type { ForceLink } from 'd3-force';
 import type { NodeType, World } from '@/types';
 import { neighborhood, toGraphData, type CanvasLink, type CanvasNode } from '@/lib/graph/layout';
 import { captureHomes, configureLinkForce, makeDriftForce, makeForces, settleLayout } from '@/lib/graph/forces';
+// [settings] Display settings (theme, node names, hidden subjects, motion) come from Settings; see src/lib/settings.ts.
+import { shortLabel, toneFor } from '@/lib/graph/tone';
+import { useSettings } from '@/lib/useSettings';
 
 type FGNode = NodeObject<CanvasNode>;
 type FGLink = LinkObject<CanvasNode, CanvasLink>;
@@ -40,6 +43,26 @@ function fitPadding(width: number): number {
 function rgba(hex: string, a: number): string {
   const n = parseInt(hex.slice(1), 16);
   return `rgba(${(n >> 16) & 255}, ${(n >> 8) & 255}, ${n & 255}, ${a})`;
+}
+
+// [settings] Colours the canvas needs, read from the page's CSS variables so the map follows the light/dark theme.
+interface Palette { ground: string; ink: string; neutral: string; font: string; light: boolean }
+const DARK_PALETTE: Palette = { ground: CANVAS_BG, ink: BONE, neutral: NEUTRAL, font: 'sans-serif', light: false };
+function readPalette(): Palette {
+  if (typeof document === 'undefined') return DARK_PALETTE;
+  const root = document.documentElement;
+  const cs = getComputedStyle(root);
+  const hex = (name: string, fallback: string) => {
+    const v = cs.getPropertyValue(name).trim();
+    return /^#[0-9a-fA-F]{6}$/.test(v) ? v : fallback;
+  };
+  return {
+    ground: hex('--ground', CANVAS_BG),
+    ink: hex('--ink', BONE),
+    neutral: hex('--rule-strong', NEUTRAL),
+    font: getComputedStyle(document.body).fontFamily || 'sans-serif',
+    light: root.getAttribute('data-theme') === 'light',
+  };
 }
 
 /** Trace the outline for a node type: circle, diamond, square or hexagon. */
@@ -112,9 +135,20 @@ export default function GraphCanvas({ world }: { world: World }) {
   const userMovedRef = useRef(false);
   const forcesInstalled = useRef(false);
 
-  const [startReduced] = useState(prefersReducedMotion);
-  const [reduced, setReduced] = useState(startReduced);
-  const [paused, setPaused] = useState(startReduced);
+  // [settings]
+  const { settings } = useSettings();
+  const [palette, setPalette] = useState<Palette>(readPalette);
+  const paletteRef = useRef(palette);
+  const settingsRef = useRef(settings);
+  const hiddenSubjects = useMemo(() => new Set(settings.hiddenSubjects), [settings.hiddenSubjects]);
+  const motionOff = settings.motion === 'off';
+
+  const [startReduced] = useState(() => prefersReducedMotion() || settings.motion === 'off');
+  // [settings] "Motion: off" in Settings acts exactly like the system reduced-motion preference.
+  const [systemReduced, setReduced] = useState(prefersReducedMotion);
+  const reduced = systemReduced || motionOff;
+  const [pausedByUser, setPaused] = useState(startReduced);
+  const paused = pausedByUser || motionOff;
   const [size, setSize] = useState({ width: 0, height: 0 });
   const [status, setStatus] = useState(startReduced ? 'motion is off.' : 'arranging the map…');
   const [tip, setTip] = useState<Tip | null>(null);
@@ -154,7 +188,8 @@ export default function GraphCanvas({ world }: { world: World }) {
       const t = link.target as CanvasNode;
       if (!s?.domains || !t?.domains) return null;
       const shared = s.domains.find((d) => t.domains.includes(d));
-      return shared ? (graph.colors.get(shared) ?? null) : null;
+      const color = shared ? (graph.colors.get(shared) ?? null) : null;
+      return color ? toneFor(color, paletteRef.current.light) : null; // [settings] darker on the light theme
     },
     [graph],
   );
@@ -188,6 +223,18 @@ export default function GraphCanvas({ world }: { world: World }) {
     return () => mq.removeEventListener('change', onChange);
   }, []);
 
+  // [settings] Keep the refs current and follow theme changes (the attribute changes whenever the theme does).
+  useEffect(() => {
+    paletteRef.current = palette;
+    settingsRef.current = settings;
+  }, [palette, settings]);
+  useEffect(() => {
+    const refresh = () => setPalette(readPalette());
+    const mo = new MutationObserver(refresh);
+    mo.observe(document.documentElement, { attributes: true, attributeFilter: ['data-theme', 'data-contrast', 'data-font'] });
+    refresh();
+    return () => mo.disconnect();
+  }, []);
   // Install the island forces (and the drift, which waits until nodes have a home) once.
   useEffect(() => {
     const fg = fgRef.current;
@@ -257,21 +304,23 @@ export default function GraphCanvas({ world }: { world: World }) {
       const hovered = a.shown?.id === node.id;
       const r = dotR(node, scale) * (hovered ? 1 + 0.5 * a.t : 1);
       ctx.globalAlpha = alphaFor(!!a.shown?.nodes.has(node.id));
+      const P = paletteRef.current; // [settings]
+      const inkOn = P.ink;
 
       if (node.domains.length > 1) {
         // Bridge concept: a white dot with a thin ring, where two subjects meet.
         ctx.beginPath();
         ctx.arc(x, y, r, 0, 2 * Math.PI);
-        ctx.fillStyle = BONE;
+        ctx.fillStyle = inkOn;
         ctx.fill();
         ctx.lineWidth = 1.5 / scale;
-        ctx.strokeStyle = rgba(BONE, 0.45);
+        ctx.strokeStyle = rgba(inkOn, 0.45);
         ctx.beginPath();
         ctx.arc(x, y, r + 2.5 / scale, 0, 2 * Math.PI);
         ctx.stroke();
       } else {
         traceShape(ctx, node.type, x, y, r);
-        ctx.fillStyle = node.color;
+        ctx.fillStyle = toneFor(node.color, P.light);
         ctx.fill();
       }
 
@@ -281,12 +330,35 @@ export default function GraphCanvas({ world }: { world: World }) {
         ctx.beginPath();
         ctx.arc(x, y, r + (4 + 6 * a.t) / scale, 0, 2 * Math.PI);
         ctx.lineWidth = 1.5 / scale;
-        ctx.strokeStyle = rgba(BONE, 0.8);
+        ctx.strokeStyle = rgba(inkOn, 0.8);
         ctx.stroke();
       }
       ctx.globalAlpha = 1;
+
+      // [settings] Node names on the map: "hover" (default) draws none here; "zoom" shows them as you zoom in;
+      // "always" shows every name. Names fade with the rest of the map while another dot is hovered.
+      const mode = settingsRef.current.nodeNames;
+      if (mode !== 'hover') {
+        const important = node.domains.length > 1 || (degree.get(node.id) ?? 0) >= 5;
+        const show = mode === 'always' || scale >= (important ? 1.6 : 2.6);
+        if (show) {
+          const lit = alphaFor(!!a.shown?.nodes.has(node.id));
+          const fontPx = 13 / scale;
+          ctx.font = `${fontPx}px ${P.font}`;
+          ctx.textAlign = 'left';
+          ctx.textBaseline = 'middle';
+          const text = shortLabel(node.label);
+          const tx = x + r + 5 / scale;
+          ctx.lineJoin = 'round';
+          ctx.lineWidth = 3.5 / scale;
+          ctx.strokeStyle = rgba(P.ground, 0.85 * lit);
+          ctx.strokeText(text, tx, y);
+          ctx.fillStyle = rgba(P.ink, 0.92 * lit);
+          ctx.fillText(text, tx, y);
+        }
+      }
     },
-    [dotR],
+    [dotR, degree],
   );
 
   const paintPointerArea = useCallback(
@@ -304,9 +376,10 @@ export default function GraphCanvas({ world }: { world: World }) {
       const a = animRef.current;
       const line = linkColorOf(link);
       const lit = !!a.shown?.edges.has(link.id);
-      if (a.shown && lit) return rgba(line ?? BONE, 0.35 + 0.6 * a.t);
-      const base = link.edge.status === 'suggested' ? 0.3 : line ? 0.32 : 0.2;
-      return rgba(line ?? NEUTRAL, base * alphaFor(false));
+      const P = paletteRef.current; // [settings]
+      if (a.shown && lit) return rgba(line ?? P.ink, 0.35 + 0.6 * a.t);
+      const base = link.edge.status === 'suggested' ? 0.3 : line ? (P.light ? 0.5 : 0.32) : P.light ? 0.35 : 0.2;
+      return rgba(line ?? P.neutral, base * alphaFor(false));
     },
     [linkColorOf],
   );
@@ -368,7 +441,7 @@ export default function GraphCanvas({ world }: { world: World }) {
           id: node.id,
           label: node.label,
           meta: [TYPE_NAMES[node.type], node.domains.join(' + '), codes].filter(Boolean).join(' · '),
-          color: node.domains.length > 1 ? BONE : node.color,
+          color: node.domains.length > 1 ? paletteRef.current.ink : toneFor(node.color, paletteRef.current.light),
           instant: wasOpen,
         });
       } else {
@@ -409,7 +482,7 @@ export default function GraphCanvas({ world }: { world: World }) {
             width={size.width}
             height={size.height}
             graphData={graphData}
-            backgroundColor={CANVAS_BG}
+            backgroundColor={palette.ground}
             nodeId="id"
             nodeLabel={() => ''}
             nodeRelSize={3}
@@ -420,6 +493,15 @@ export default function GraphCanvas({ world }: { world: World }) {
             linkColor={linkColor}
             linkWidth={linkWidth}
             linkLineDash={(l) => (l.edge.status === 'suggested' ? [4, 4] : null)}
+            // [settings] hidden subjects, and the "show suggested links" switch
+            nodeVisibility={(n) => !n.domains.every((d) => hiddenSubjects.has(d))}
+            linkVisibility={(l) => {
+              if (!settings.showSuggested && l.edge.status === 'suggested') return false;
+              const s = l.source as CanvasNode;
+              const t = l.target as CanvasNode;
+              const gone = (n: CanvasNode) => !!n?.domains && n.domains.every((d) => hiddenSubjects.has(d));
+              return !gone(s) && !gone(t);
+            }}
             linkDirectionalArrowLength={arrowLength}
             linkDirectionalArrowRelPos={1}
             onRenderFramePre={onFramePre}

@@ -1,5 +1,7 @@
 import type { Metadata } from "next";
-import { Host_Grotesk, JetBrains_Mono } from "next/font/google";
+import { Atkinson_Hyperlegible, Host_Grotesk, JetBrains_Mono } from "next/font/google";
+import SettingsApplier from "@/components/SettingsApplier";
+import { SETTINGS_BOOT_SCRIPT } from "@/lib/settings";
 import "./globals.css";
 
 // Type from the taste skill's software pairing: Host Grotesk for text and headings,
@@ -14,6 +16,13 @@ const jetbrainsMono = JetBrains_Mono({
   subsets: ["latin"],
 });
 
+// Optional readable font, switched on in Settings (kept next to the others so it loads from the same place).
+const atkinson = Atkinson_Hyperlegible({
+  variable: "--font-atkinson",
+  weight: ["400", "700"],
+  subsets: ["latin"],
+});
+
 export const metadata: Metadata = {
   title: { default: "atlas: your whole degree, mapped", template: "%s · atlas" },
   description:
@@ -24,9 +33,18 @@ export default function RootLayout({ children }: LayoutProps<"/">) {
   return (
     <html
       lang="en"
-      className={`${hostGrotesk.variable} ${jetbrainsMono.variable} h-full antialiased`}
+      className={`${hostGrotesk.variable} ${jetbrainsMono.variable} ${atkinson.variable} h-full antialiased`}
+      // The boot script below sets data-* attributes before React loads, so React must not complain about them.
+      suppressHydrationWarning
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <head>
+        {/* Applies saved display settings before the first paint (no flash of the wrong theme). */}
+        <script dangerouslySetInnerHTML={{ __html: SETTINGS_BOOT_SCRIPT }} />
+      </head>
+      <body className="min-h-full flex flex-col">
+        <SettingsApplier />
+        {children}
+      </body>
     </html>
   );
 }

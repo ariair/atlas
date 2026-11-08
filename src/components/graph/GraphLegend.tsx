@@ -4,10 +4,13 @@
 // focus, and can be folded away. Open by default on large screens; folded where it would cover the map.
 import { useEffect, useRef } from 'react';
 import { DOMAIN_PALETTE, allDomains } from '@/lib/graph/layout';
+import { toneFor } from '@/lib/graph/tone'; // [settings]
+import { useResolvedTheme } from '@/lib/useSettings';
 import type { World } from '@/types';
 
-const DOT = '#B8BEC8';
-const BONE = '#F2F0E9';
+// [settings] Follow the theme: these were fixed light-on-dark colours.
+const DOT = 'var(--ink-muted)';
+const BONE = 'var(--ink)';
 const SHAPES = [
   { label: 'concept', shape: <circle cx="10" cy="10" r="4" /> },
   { label: 'assignment', shape: <polygon points="10,4.5 15.5,10 10,15.5 4.5,10" /> },
@@ -18,6 +21,7 @@ const SHAPES = [
 export default function GraphLegend({ world }: { world: World }) {
   const domains = allDomains(world);
   const ref = useRef<HTMLDetailsElement>(null);
+  const light = useResolvedTheme() === 'light';
 
   useEffect(() => {
     if (ref.current && window.matchMedia('(min-width: 1024px) and (min-height: 700px)').matches) ref.current.open = true;
@@ -35,7 +39,7 @@ export default function GraphLegend({ world }: { world: World }) {
         <ul aria-label="Subjects" className="flex flex-col gap-1">
           {domains.map((d, i) => (
             <li key={d} className="flex items-center gap-2">
-              <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: DOMAIN_PALETTE[i % DOMAIN_PALETTE.length] }} />
+              <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: toneFor(DOMAIN_PALETTE[i % DOMAIN_PALETTE.length], light) }} />
               {d}
             </li>
           ))}
