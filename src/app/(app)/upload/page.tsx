@@ -1,7 +1,7 @@
 import type { Metadata } from 'next';
 import UploadFlow from './UploadFlow';
 
-export const metadata: Metadata = { title: 'Add a course | Atlas' };
+export const metadata: Metadata = { title: 'Add a course' };
 
 export default function UploadPage() {
   return (
