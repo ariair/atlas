@@ -9,6 +9,7 @@ import { GROUP_LABELS, GROUP_ORDER, groupDeadlines, groupKey, type DeadlineGroup
 import { generateIcs, googleCalendarUrl, isAllDay } from '@/lib/ics';
 import { courseColors } from '@/lib/graph/layout';
 import { priorityOf } from '@/lib/priority';
+import BubbleToggle from '@/components/ui/BubbleToggle';
 import { relatedTopicIds, studyHref } from '@/lib/studyLink';
 
 const KINDS = ['assignment', 'quiz', 'midterm', 'final', 'project', 'other'] as const;
@@ -248,19 +249,7 @@ export default function DeadlinesView() {
           </p>
           <div className="flex flex-wrap items-center gap-2">
             {filtersOn && <button type="button" onClick={clearFilters} className="btn rounded-full border-transparent bg-transparent">clear filters</button>}
-            <div role="group" aria-label="View" className="flex rounded-full border border-rule p-1">
-              {(['timeline', 'list'] as const).map((v) => (
-                <button
-                  key={v}
-                  type="button"
-                  aria-pressed={view === v}
-                  onClick={() => setView(v)}
-                  className={`min-h-9 min-w-11 rounded-full px-4 lowercase transition-colors duration-150 ${view === v ? 'bg-white/15 font-medium text-ink' : 'text-ink-muted hover:text-ink'}`}
-                >
-                  {v}
-                </button>
-              ))}
-            </div>
+            <BubbleToggle label="View" value={view} onChange={setView} options={[{ value: 'timeline', label: 'timeline' }, { value: 'list', label: 'list' }]} className="lowercase" />
             <button type="button" onClick={exportIcs} disabled={datedCount === 0} className="btn btn-primary rounded-full">
               Export {datedCount} to calendar (.ics)
             </button>

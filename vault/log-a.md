@@ -111,3 +111,6 @@
 
 ## 2026-11-08: CLAUDE.md refresh (Person A)
 - Updated CLAUDE.md: deploy note (merging to main should deploy by itself), relink and Add assignment in the ingest and pages notes, node card and filter panel details, Figma templates are the design basis.
+
+## 2026-11-08: Deadlines view switch animated (Person A, in Person B's folder at the user's request)
+- `app/(app)/deadlines/DeadlinesView.tsx`: the timeline | list buttons now use the shared `BubbleToggle` (sliding bubble) instead of plain buttons.
