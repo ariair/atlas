@@ -1,19 +1,24 @@
 @import "tailwindcss";
 
-/* Atlas: night-edition transit map. Dark by default (PRODUCT.md). */
+/* Atlas: dark constellation on a grey palette (#252525, #545454, #7D7D7D, #CFCFCF).
+   Subject colours on the map stay Okabe-Ito (colour-blind safe); this palette is the interface around them. */
 :root {
-  --ground: #0e1116; /* the map at night */
-  --grid: #161b22; /* faint map grid */
-  --surface: #151a21; /* panels and controls */
-  --surface-raised: #1d232c;
-  --rule: #2a313b; /* decorative 1px dividers */
-  --rule-strong: #6b7686; /* control borders, 3:1+ on surface */
-  --ink: #f2f0e9; /* bone white: text, stations, primary action */
-  --ink-muted: #b8bec8;
-  --ink-on-light: #0e1116;
-  --line-1: #e69f00; /* Okabe-Ito line colours, in DOMAIN_PALETTE order */
-  --line-2: #56b4e9;
-  --line-3: #009e73;
+  --ground: #1b1b1b; /* the map at night: a deeper step of #252525 */
+  --grid: #222222; /* faint map grid */
+  --surface: #252525; /* panels and controls */
+  --surface-raised: #303030;
+  --rule: #545454; /* decorative 1px dividers */
+  --rule-strong: #7d7d7d; /* control borders, 3:1+ on surface */
+  --ink: #f4f4f4; /* text, primary action */
+  --ink-muted: #cfcfcf; /* secondary text */
+  --ink-on-light: #1b1b1b;
+  --accent: #cfcfcf;
+  --accent-deep: #545454;
+  --accent-soft: #7d7d7d;
+  --teal-deep: #252525;
+  --line-1: #e3a93d; /* Subject colours (softened Okabe-Ito), in DOMAIN_PALETTE order */
+  --line-2: #78b4de;
+  --line-3: #3dae8c;
   --ease-out: cubic-bezier(0.23, 1, 0.32, 1); /* strong ease-out (Emil skill) */
   --ease-in-out: cubic-bezier(0.77, 0, 0.175, 1);
 }
@@ -43,11 +48,11 @@ body {
   font-family: var(--font-sans);
   font-size: 1.125rem; /* 18px floor */
   line-height: 1.55;
-  caret-color: var(--line-2);
+  caret-color: var(--ink-muted);
 }
 
 ::selection {
-  background: var(--line-2);
+  background: var(--ink-muted);
   color: var(--ink-on-light);
 }
 
@@ -105,9 +110,16 @@ a {
   border-color: var(--ink);
   color: var(--ink-on-light);
 }
-.btn-primary:hover {
-  background: #ffffff;
-  border-color: #ffffff;
+@media (hover: hover) and (pointer: fine) {
+  .btn-primary:hover {
+    background: #ffffff;
+    border-color: #ffffff;
+  }
+}
+/* Quiet, not-yet-available controls (login and sign up until Auth0 is ready). */
+.btn[aria-disabled="true"] {
+  cursor: not-allowed;
+  opacity: 0.6;
 }
 .btn-icon {
   padding: 0;
@@ -171,18 +183,47 @@ a {
   cursor: not-allowed;
 }
 
-/* The map key rests faded and comes up to full strength when you reach for it. */
+/* The map key rests faded and comes up to full strength when you reach for it. Its panel grows
+   from the bottom-left corner, like the name card (scale from 0.96, never from 0). */
 .map-key {
   opacity: 0.72;
   transition: opacity 200ms ease;
 }
 .map-key:hover,
-.map-key:focus-within,
-.map-key[open]:hover {
+.map-key:focus-within {
   opacity: 1;
 }
-.map-key summary::-webkit-details-marker {
-  display: none;
+.pop-panel {
+  transform-origin: var(--pop-origin, 0% 100%);
+  opacity: 0;
+  transform: scale(0.96) translateY(6px);
+  visibility: hidden;
+  pointer-events: none;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 200ms var(--ease-out),
+    visibility 0s linear 200ms;
+}
+.pop-panel[data-open="true"] {
+  opacity: 1;
+  transform: none;
+  visibility: visible;
+  pointer-events: auto;
+  transition:
+    opacity 160ms var(--ease-out),
+    transform 220ms var(--ease-out),
+    visibility 0s;
+}
+/* Items inside a popover rise in one after another. */
+.pop-panel[data-open="true"] .pop-item {
+  animation: pop-item 260ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 35ms + 40ms);
+}
+@keyframes pop-item {
+  from {
+    opacity: 0;
+    transform: translateY(6px);
+  }
 }
 
 /* The map fades in once its data arrives, instead of popping. */
@@ -216,6 +257,111 @@ a {
 @keyframes hero-enter {
   from {
     transform: translateY(8px);
+  }
+}
+
+/* Top bar: floats in once, and the logo twists while its name slides out of it. */
+.nav-enter {
+  animation: nav-enter 600ms var(--ease-out) backwards;
+}
+@keyframes nav-enter {
+  from {
+    opacity: 0;
+    transform: translateY(-14px);
+  }
+}
+.logo-mark {
+  transition: transform 650ms var(--ease-out);
+}
+.logo-word {
+  display: grid;
+  grid-template-columns: 0fr;
+  opacity: 0;
+  transform: translateX(-10px);
+  transition:
+    grid-template-columns 450ms var(--ease-out),
+    opacity 300ms var(--ease-out),
+    transform 450ms var(--ease-out);
+}
+.logo-word > span {
+  overflow: hidden;
+  white-space: nowrap;
+  padding-right: 2px;
+}
+@media (hover: hover) and (pointer: fine) {
+  .logo-link:hover .logo-mark {
+    transform: rotate(360deg) scale(1.08);
+  }
+  .logo-link:hover .logo-word {
+    grid-template-columns: 1fr;
+    opacity: 1;
+    transform: none;
+  }
+}
+.logo-link:focus-visible .logo-mark {
+  transform: rotate(360deg) scale(1.08);
+}
+.logo-link:focus-visible .logo-word {
+  grid-template-columns: 1fr;
+  opacity: 1;
+  transform: none;
+}
+/* Nav links: only the text colour changes on hover; there is no highlight shape. */
+.nav-link {
+  position: relative;
+  z-index: 0;
+  transition: color 160ms var(--ease-out);
+}
+
+/* The current page's bubble is one shared element that slides between links. */
+.nav-bubble {
+  position: absolute;
+  left: 0;
+  top: 6px;
+  bottom: 6px;
+  width: 0;
+  border-radius: 999px;
+  background: rgba(207, 207, 207, 0.2);
+  opacity: 0;
+  pointer-events: none;
+  /* A soft spring: the bubble overshoots a touch and settles, and its width lags its position so it
+     stretches as it travels. */
+  transition:
+    transform 600ms cubic-bezier(0.34, 1.35, 0.5, 1),
+    width 720ms cubic-bezier(0.34, 1.25, 0.5, 1),
+    opacity 200ms var(--ease-out);
+}
+
+/* Landing backdrop: soft glows drift behind the text; the dot grid fades toward the edges. */
+.glow {
+  position: absolute;
+  border-radius: 999px;
+  filter: blur(80px);
+  opacity: 0.5;
+  animation: glow-drift 18s ease-in-out infinite alternate;
+}
+@keyframes glow-drift {
+  to {
+    transform: translate3d(60px, 40px, 0) scale(1.15);
+  }
+}
+.dot-grid {
+  background-image: radial-gradient(rgba(207, 207, 207, 0.22) 1px, transparent 1px);
+  background-size: 28px 28px;
+  mask-image: radial-gradient(ellipse at 50% 40%, #000 20%, transparent 72%);
+  animation: grid-pan 40s linear infinite;
+}
+@keyframes grid-pan {
+  to {
+    background-position: 28px 28px;
+  }
+}
+.float-shape {
+  animation: float-shape 9s ease-in-out infinite alternate;
+}
+@keyframes float-shape {
+  to {
+    transform: translate3d(0, -18px, 0) rotate(8deg);
   }
 }
 

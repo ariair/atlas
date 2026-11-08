@@ -34,8 +34,8 @@ export interface Constellation {
   focus: { x: number; y: number; label: string; meta: string; color: string } | null;
 }
 
-export const BONE = '#F2F0E9';
-const NEUTRAL = '#6B7686';
+export const BONE = '#F4F4F4';
+const NEUTRAL = '#7D7D7D';
 const TYPE_NAMES: Record<NodeType, string> = { concept: 'Concept', assignment: 'Assignment', exam: 'Exam', course: 'Course' };
 
 /** Same sizing rule as the live map: better-connected dots are a little larger. */
