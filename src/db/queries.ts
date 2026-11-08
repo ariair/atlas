@@ -1,10 +1,11 @@
-import { and, eq, inArray, sql } from 'drizzle-orm';
+import { and, eq, inArray, or, sql } from 'drizzle-orm';
 import type { World } from '../types';
 import { getDb } from './client';
 import { users, courses, topics, nodes, edges, deadlines, documents, aiUsage } from './schema';
 import { rowsToWorld, worldToRows } from './world';
 import type { NodePatch } from '../lib/nodePatch';
 import { slug } from '../lib/ingest/commit';
+import { renameDomain, yearsFor } from '../lib/manage';
 import { mergeNodeFields, rewriteDeadlineNodeIds, rewriteEdgesForMerge } from '../lib/merge';
 
 /** The whole World for one user (empty arrays if they have no data yet). */
@@ -257,4 +258,107 @@ export async function mergeTopics(userId: string, keepId: string, goneId: string
     await tx.delete(topics).where(and(eq(topics.userId, userId), eq(topics.id, goneId)));
     return 'ok' as const;
   });
+}
+
+// ---------------------------------------------------------------------------
+// Managing subjects, courses and items (Settings page)
+// ---------------------------------------------------------------------------
+
+export type CoursePatch = { code?: string; title?: string; domain?: string; year?: 1 | 2 | 3 | 4; term?: string };
+
+/** Edit a course. Changing its subject or year also updates the items that belong to it. */
+export async function updateCourse(userId: string, id: string, patch: CoursePatch) {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select().from(courses).where(and(eq(courses.userId, userId), eq(courses.id, id)));
+    if (!row) return { status: 'missing' as const };
+    const set: Partial<typeof courses.$inferInsert> = {};
+    for (const k of ['code', 'title', 'domain', 'year', 'term'] as const) if (patch[k] !== undefined) (set as Record<string, unknown>)[k] = patch[k];
+    const [updated] = await tx.update(courses).set(set).where(and(eq(courses.userId, userId), eq(courses.id, id))).returning();
+
+    if (patch.domain !== undefined && patch.domain !== row.domain) {
+      const mine = await tx.select().from(nodes).where(and(eq(nodes.userId, userId), sql`${id} = ANY(${nodes.courseIds})`));
+      for (const n of mine) {
+        await tx.update(nodes).set({ domains: renameDomain(n.domains, row.domain, patch.domain) }).where(and(eq(nodes.userId, userId), eq(nodes.id, n.id)));
+      }
+    }
+    if (patch.year !== undefined && patch.year !== row.year) {
+      const yearByCourse = new Map((await tx.select({ id: courses.id, year: courses.year }).from(courses).where(eq(courses.userId, userId))).map((c) => [c.id, c.year]));
+      const mine = await tx.select().from(nodes).where(and(eq(nodes.userId, userId), sql`${id} = ANY(${nodes.courseIds})`));
+      for (const n of mine) {
+        await tx.update(nodes).set({ years: yearsFor(n.courseIds, yearByCourse) }).where(and(eq(nodes.userId, userId), eq(nodes.id, n.id)));
+      }
+    }
+    return { status: 'ok' as const, course: { id: updated.id, code: updated.code, title: updated.title, domain: updated.domain, year: updated.year, term: updated.term } };
+  });
+}
+
+/** Delete a course and everything that only belongs to it. Items shared with another course just lose this course. */
+export async function deleteCourse(userId: string, id: string) {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select().from(courses).where(and(eq(courses.userId, userId), eq(courses.id, id)));
+    if (!row) return { status: 'missing' as const };
+    const yearByCourse = new Map((await tx.select({ id: courses.id, year: courses.year }).from(courses).where(eq(courses.userId, userId))).map((c) => [c.id, c.year]));
+    const mine = await tx.select().from(nodes).where(and(eq(nodes.userId, userId), sql`${id} = ANY(${nodes.courseIds})`));
+    const goneIds: string[] = [];
+    for (const n of mine) {
+      const rest = n.courseIds.filter((c) => c !== id);
+      if (rest.length === 0) goneIds.push(n.id);
+      else await tx.update(nodes).set({ courseIds: rest, years: yearsFor(rest, yearByCourse) }).where(and(eq(nodes.userId, userId), eq(nodes.id, n.id)));
+    }
+    if (goneIds.length) {
+      await tx.delete(edges).where(and(eq(edges.userId, userId), or(inArray(edges.fromId, goneIds), inArray(edges.toId, goneIds))));
+      const refs = (await tx.select().from(deadlines).where(eq(deadlines.userId, userId))).filter((d) => d.nodeIds.some((x) => goneIds.includes(x)));
+      for (const d of refs) {
+        await tx.update(deadlines).set({ nodeIds: d.nodeIds.filter((x) => !goneIds.includes(x)) }).where(and(eq(deadlines.userId, userId), eq(deadlines.id, d.id)));
+      }
+      await tx.delete(nodes).where(and(eq(nodes.userId, userId), inArray(nodes.id, goneIds)));
+    }
+    const removedDeadlines = await tx.delete(deadlines).where(and(eq(deadlines.userId, userId), eq(deadlines.courseId, id))).returning({ id: deadlines.id });
+    await tx.delete(topics).where(and(eq(topics.userId, userId), eq(topics.courseId, id)));
+    await tx.delete(courses).where(and(eq(courses.userId, userId), eq(courses.id, id)));
+    // Forget the saved reading of this course's document, so adding it again starts fresh.
+    await tx.execute(sql`delete from documents where user_id = ${userId} and draft->'course'->>'code' = ${row.code} and draft->'course'->>'term' = ${row.term}`);
+    return { status: 'ok' as const, removed: { items: goneIds.length, deadlines: removedDeadlines.length } };
+  });
+}
+
+/** Rename a subject (department). If the new name already exists the two subjects become one. */
+export async function renameSubject(userId: string, from: string, to: string) {
+  return getDb().transaction(async (tx) => {
+    const cs = await tx.update(courses).set({ domain: to }).where(and(eq(courses.userId, userId), eq(courses.domain, from))).returning({ id: courses.id });
+    const mine = await tx.select().from(nodes).where(and(eq(nodes.userId, userId), sql`${from} = ANY(${nodes.domains})`));
+    for (const n of mine) {
+      await tx.update(nodes).set({ domains: renameDomain(n.domains, from, to) }).where(and(eq(nodes.userId, userId), eq(nodes.id, n.id)));
+    }
+    return { courses: cs.length, items: mine.length };
+  });
+}
+
+/** Remove one item and its links. Deadlines that mentioned it just stop mentioning it. */
+export async function deleteNode(userId: string, id: string): Promise<'ok' | 'missing'> {
+  return getDb().transaction(async (tx) => {
+    const gone = await tx.delete(nodes).where(and(eq(nodes.userId, userId), eq(nodes.id, id))).returning({ id: nodes.id });
+    if (gone.length === 0) return 'missing' as const;
+    await tx.delete(edges).where(and(eq(edges.userId, userId), sql`(${edges.fromId} = ${id} OR ${edges.toId} = ${id})`));
+    const refs = await tx.select().from(deadlines).where(and(eq(deadlines.userId, userId), sql`${id} = ANY(${deadlines.nodeIds})`));
+    for (const d of refs) {
+      await tx.update(deadlines).set({ nodeIds: d.nodeIds.filter((x) => x !== id) }).where(and(eq(deadlines.userId, userId), eq(deadlines.id, d.id)));
+    }
+    return 'ok' as const;
+  });
+}
+
+/** What is stored for this user, and how many AI calls they have used today. */
+export async function getAccountSummary(userId: string) {
+  const db = getDb();
+  const count = (table: typeof courses | typeof topics | typeof nodes | typeof edges | typeof deadlines | typeof documents) =>
+    db.select({ n: sql<number>`count(*)::int` }).from(table).where(eq(table.userId, userId)).then((r) => r[0].n);
+  const [c, t, n, e, d, docs] = await Promise.all([count(courses), count(topics), count(nodes), count(edges), count(deadlines), count(documents)]);
+  const suggested = await db.select({ n: sql<number>`count(*)::int` }).from(edges).where(and(eq(edges.userId, userId), eq(edges.status, 'suggested'))).then((r) => r[0].n);
+  const used = await db
+    .select({ calls: aiUsage.calls })
+    .from(aiUsage)
+    .where(and(eq(aiUsage.userId, userId), sql`${aiUsage.day} = current_date`))
+    .then((r) => r[0]?.calls ?? 0);
+  return { courses: c, topics: t, items: n, links: e, suggestedLinks: suggested, deadlines: d, savedReadings: docs, aiCallsToday: used };
 }
