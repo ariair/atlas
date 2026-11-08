@@ -2,7 +2,10 @@
 
 // Loads the world from GET /api/world, validates it, and shows the canvas.
 import dynamic from 'next/dynamic';
-import { useCallback, useEffect, useState } from 'react';
+import { useCallback, useEffect, useRef, useState } from 'react';
+import OutlinePanel from '@/components/outline/OutlinePanel';
+import SearchFilterBar from '@/components/outline/SearchFilterBar';
+import { useGraphView } from '@/lib/graph/useGraphView';
 import { WorldSchema } from '@/lib/schemas';
 import type { World } from '@/types';
 import GraphLegend from './GraphLegend';
@@ -77,10 +80,90 @@ export default function WorldView() {
       </div>
     );
   }
+  return <ReadyWorld world={state.world} />;
+}
+
+// [search] The map with its Map/Outline toggle and the search and filter panel. One search state drives both views.
+function ReadyWorld({ world }: { world: World }) {
+  const view = useGraphView(world);
+  const [mode, setMode] = useState<'map' | 'outline'>('map');
+  const [panelOpen, setPanelOpen] = useState(false);
+  const searchBox = useRef<HTMLDivElement>(null);
+  const outlineTop = useRef<HTMLHeadingElement>(null);
+
+  const showOutline = () => {
+    setMode('outline');
+    setTimeout(() => outlineTop.current?.focus(), 0);
+  };
+  const toggleBtn = (m: 'map' | 'outline', label: string) => (
+    <button
+      type="button"
+      aria-pressed={mode === m}
+      onClick={() => (m === 'outline' ? showOutline() : setMode('map'))}
+      className={`min-h-11 min-w-11 px-4 font-medium ${mode === m ? 'bg-ink text-ink-on-light' : 'text-ink-muted hover:text-ink'}`}
+    >
+      {mode === m && <span aria-hidden="true">✓ </span>}
+      {label}
+    </button>
+  );
+
   return (
     <>
-      <GraphCanvas world={state.world} />
-      <GraphLegend world={state.world} />
+      {/* Keyboard shortcut for people who cannot use the map: the first Tab stop goes to the Outline. */}
+      <button type="button" onClick={showOutline} className="btn btn-primary sr-only focus:not-sr-only focus:absolute focus:left-3 focus:top-3 focus:z-50">
+        skip to outline
+      </button>
+
+      <div className="absolute inset-0" inert={mode === 'outline'} aria-hidden={mode === 'outline'}>
+        <GraphCanvas world={world} visibleIds={view.visibleIds} highlightId={view.activeId} showSuggested={view.filters.showSuggested} />
+        <GraphLegend world={world} />
+      </div>
+
+      {/* Toolbar: Map / Outline, and search & filters. */}
+      <div className="absolute left-3 top-3 z-30 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2">
+        <div role="group" aria-label="View" className="flex overflow-hidden rounded-xl border border-white/10 bg-surface/80 backdrop-blur-md">
+          {toggleBtn('map', 'map')}
+          {toggleBtn('outline', 'outline')}
+        </div>
+        <button
+          type="button"
+          aria-expanded={panelOpen}
+          aria-controls="search-panel"
+          onClick={() => {
+            setPanelOpen((o) => !o);
+            setTimeout(() => document.getElementById('graph-search')?.focus(), 50);
+          }}
+          className="btn min-h-11 rounded-xl border-white/10 bg-surface/80 backdrop-blur-md"
+        >
+          search &amp; filters{view.activeFilters > 0 ? ` (${view.activeFilters})` : ''}
+        </button>
+        {view.focus && view.activeNode && (
+          <span role="status" className="max-sm:sr-only rounded-xl border border-white/10 bg-surface/80 px-3 py-2 text-ink-muted backdrop-blur-md">
+            focused on {view.activeNode.label} · {view.shownCount} of {view.totalCount}
+          </span>
+        )}
+      </div>
+
+      {panelOpen && (
+        <div
+          id="search-panel"
+          ref={searchBox}
+          className="absolute left-3 top-[4.25rem] z-30 max-h-[calc(100%-6rem)] w-[min(28rem,calc(100%-1.5rem))] overflow-auto rounded-xl border border-white/10 bg-surface/90 p-4 backdrop-blur-md"
+        >
+          <SearchFilterBar view={view} />
+        </div>
+      )}
+
+      {mode === 'outline' && (
+        <div className="absolute inset-0 z-20 overflow-auto bg-ground px-4 pb-10 pt-[4.5rem] sm:px-6">
+          <div className="mx-auto max-w-4xl">
+            <h2 ref={outlineTop} tabIndex={-1} className="mb-3 text-2xl font-semibold tracking-tight outline-none">
+              outline
+            </h2>
+            <OutlinePanel world={world} view={view} />
+          </div>
+        </div>
+      )}
     </>
   );
 }
