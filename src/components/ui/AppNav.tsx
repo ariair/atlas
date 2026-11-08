@@ -10,9 +10,9 @@ import AlertsMenu from './AlertsMenu';
 import AtlasMark from './AtlasMark';
 import AuthLinks from './AuthLinks'; // [auth]
 
-// Study joins this list when its page ships (prompt 4A); linking it now would lead to a 404.
 const LINKS = [
   { href: '/world', label: 'map' },
+  { href: '/study', label: 'study' }, // [study]
   { href: '/upload', label: 'upload' },
   { href: '/deadlines', label: 'deadlines' },
   { href: '/settings', label: 'settings' },
