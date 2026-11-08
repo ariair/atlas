@@ -11,7 +11,7 @@ import type { ForceLink } from 'd3-force';
 import type { NodeType, World } from '@/types';
 import { neighborhood, toGraphData, type CanvasLink, type CanvasNode } from '@/lib/graph/layout';
 import NodeDetail from './NodeDetail';
-import { captureHomes, configureLinkForce, makeDriftForce, makeForces, settleLayout } from '@/lib/graph/forces';
+import { captureHomes, makeDriftForce, settleLayout } from '@/lib/graph/forces';
 // [settings] Display settings (theme, node names, hidden subjects, motion) come from Settings; see src/lib/settings.ts.
 import { shortLabel, toneFor } from '@/lib/graph/tone';
 import { useSettings } from '@/lib/useSettings';
@@ -24,7 +24,6 @@ type ForceFn = Parameters<FGMethods['d3Force']>[1];
 export const CANVAS_BG = '#1B1B1B';
 const BONE = '#F2F0E9';
 const NEUTRAL = '#7D7D7D'; // links between different subjects
-const SETTLE_MS = 5000; // let the layout find its shape, then start drifting
 const FADE_MS = 60; // hover fade time constant (settles in about 180ms, per the Emil skill)
 const GLIDE_MS = 70; // name card glide time constant when moving between dots
 const DIM = 0.12; // how visible the rest of the map stays while a dot is hovered
@@ -137,7 +136,6 @@ export default function GraphCanvas({
   const lastTipClose = useRef(0);
   const phaseRef = useRef<'settling' | 'drifting' | 'still'>('settling');
   const userMovedRef = useRef(false);
-  const forcesInstalled = useRef(false);
 
   // [settings]
   const { settings } = useSettings();
@@ -154,16 +152,17 @@ export default function GraphCanvas({
   const [pausedByUser, setPaused] = useState(startReduced);
   const paused = pausedByUser || motionOff;
   const [size, setSize] = useState({ width: 0, height: 0 });
-  const [status, setStatus] = useState(startReduced ? 'motion is off.' : 'arranging the map…');
+  const [status, setStatus] = useState(startReduced ? 'motion is off.' : 'map ready. it drifts gently; use pause motion to stop it.');
   const [tip, setTip] = useState<Tip | null>(null);
+  const [decisions, setDecisions] = useState<Record<string, 'accepted' | 'rejected'>>({}); // AI suggested links the user kept or dismissed
+  const [edgeNote, setEdgeNote] = useState('');
+  const decisionsRef = useRef(decisions);
   const [selectedId, setSelectedId] = useState<string | null>(null); // the dot whose detail card is open
-  const [settled, setSettled] = useState(false); // after the first settle the drift runs without a time limit
 
-  // With reduced motion the layout is computed up front, so nothing ever moves on screen.
-  const graph = useMemo(() => {
-    const g = toGraphData(world);
-    return startReduced ? settleLayout(g) : g;
-  }, [world, startReduced]);
+  // The map's shape is worked out up front, in one go, the same way every time. (Settling it live made the shape
+  // depend on frame timing, so revisiting the map or pausing and playing could scatter lone dots and
+  // stretch the islands.) After this, the live simulation only sways the dots gently around their resting spots.
+  const graph = useMemo(() => settleLayout(toGraphData(world)), [world]);
   const graphData = useMemo(() => ({ nodes: graph.nodes, links: graph.links }), [graph]);
   const courseCode = useMemo(() => new Map(world.courses.map((c) => [c.id, c.code])), [world.courses]);
 
@@ -185,6 +184,39 @@ export default function GraphCanvas({
     fg.centerAt(n.x, n.y, ms);
     fg.zoom(Math.max(fg.zoom(), 2.4), ms);
   }, [highlightId, graph.nodes, reduced]);
+
+  // The links as the user sees them: dismissed suggestions are gone, kept ones are solid.
+  const effectiveEdges = useMemo(
+    () => world.edges.filter((e) => decisions[e.id] !== 'rejected').map((e) => (decisions[e.id] === 'accepted' ? { ...e, status: 'accepted' as const } : e)),
+    [world.edges, decisions],
+  );
+  const effectiveEdgesRef = useRef(effectiveEdges);
+  useEffect(() => {
+    decisionsRef.current = decisions;
+    effectiveEdgesRef.current = effectiveEdges;
+  }, [decisions, effectiveEdges]);
+  const detailWorld = useMemo(() => ({ ...world, edges: effectiveEdges }), [world, effectiveEdges]);
+
+  // Keep or dismiss an AI suggested link. It changes on the map straight away and is saved with PATCH /api/edges/:id
+  // (demo mode saves nothing); if saving fails the change is undone.
+  const decideEdge = useCallback(async (id: string, status: 'accepted' | 'rejected') => {
+    setDecisions((d) => ({ ...d, [id]: status }));
+    setEdgeNote('');
+    try {
+      const res = await fetch(`/api/edges/${encodeURIComponent(id)}`, { method: 'PATCH', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ status }) });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `The server answered ${res.status}.`);
+      const done = status === 'rejected' ? 'Link dismissed.' : 'Link kept.';
+      setEdgeNote(data?.demo ? `${done} Demo mode: this change is not saved.` : done);
+    } catch (err) {
+      setDecisions((d) => {
+        const next = { ...d };
+        delete next[id];
+        return next;
+      });
+      setEdgeNote(`We could not update that link. ${err instanceof Error ? err.message : ''}`.trim());
+    }
+  }, []);
 
   // How many links touch each dot: better-connected dots are drawn a little larger.
   const degree = useMemo(() => {
@@ -266,49 +298,27 @@ export default function GraphCanvas({
     refresh();
     return () => mo.disconnect();
   }, []);
-  // Install the island forces (and the drift, which waits until nodes have a home) once.
+  // Set up the live simulation: no layout forces at all (the shape is already worked out), just the gentle drift.
+  // This runs again every time the map page comes back (Next.js keeps a page you left and re-creates the graph
+  // engine when you return, e.g. with the Back button), because a fresh engine starts with its default
+  // forces, which would squash the islands together and push unlinked dots away.
+  const hasSize = size.width > 0;
   useEffect(() => {
     const fg = fgRef.current;
-    if (!fg || size.width === 0 || forcesInstalled.current) return;
-    forcesInstalled.current = true;
+    if (!fg || !hasSize) return;
     fg.d3Force('center', null);
-    for (const [name, force] of Object.entries(makeForces())) fg.d3Force(name, force as unknown as ForceFn);
+    fg.d3Force('charge', null);
+    (fg.d3Force('link') as unknown as ForceLink<CanvasNode, CanvasLink> | undefined)?.strength(0); // keeps ids resolved, moves nothing
     fg.d3Force('drift', makeDriftForce(() => performance.now()) as unknown as ForceFn);
-    const link = fg.d3Force('link') as unknown as ForceLink<CanvasNode, CanvasLink> | undefined;
-    if (link) configureLinkForce(link);
-    if (startReduced) {
-      captureHomes(graph.nodes);
-      phaseRef.current = 'still';
-    } else {
-      fg.d3ReheatSimulation();
-    }
-  }, [size.width, startReduced, graph]);
+    captureHomes(graph.nodes); // first time: remember the resting spots; after coming back: put every dot back on its spot
+    phaseRef.current = startReduced ? 'still' : 'drifting';
+    if (!userMovedRef.current) fg.zoomToFit(0, fitPadding(boxRef.current?.clientWidth ?? 800));
+    if (!startReduced) fg.d3ReheatSimulation();
+  }, [hasSize, startReduced, graph]);
 
   const onEngineStop = useCallback(() => {
-    const fg = fgRef.current;
-    if (phaseRef.current === 'settling') {
-      // The layout has found its shape: frame it, remember every resting spot, then start drifting.
-      captureHomes(graph.nodes);
-      setSettled(true);
-      if (!userMovedRef.current) fg?.zoomToFit(reduced ? 0 : 600, fitPadding(boxRef.current?.clientWidth ?? 800));
-      if (reduced || paused) {
-        phaseRef.current = 'still';
-        setStatus('map settled.');
-        return;
-      }
-      // From here on only the drift moves the dots. The layout forces are switched off, so pausing and
-      // resuming (which reheats the simulation) can no longer push the islands further apart each time.
-      if (fg) {
-        for (const name of ['x', 'y', 'charge', 'collide']) fg.d3Force(name, null);
-        (fg.d3Force('link') as unknown as ForceLink<CanvasNode, CanvasLink> | undefined)?.strength(0); // keeps ids resolved
-      }
-      phaseRef.current = 'drifting';
-      setStatus('map settled. it drifts gently; use pause motion to stop it.');
-      fg?.d3ReheatSimulation();
-      return;
-    }
     phaseRef.current = 'still';
-  }, [graph, reduced, paused]);
+  }, []);
 
   // Pause and resume: resuming restarts the gentle drift.
   const togglePause = () => {
@@ -316,10 +326,8 @@ export default function GraphCanvas({
     if (paused) {
       setPaused(false);
       setStatus('motion resumed.');
-      if (phaseRef.current !== 'settling') {
-        phaseRef.current = 'drifting';
-        requestAnimationFrame(() => fg?.d3ReheatSimulation());
-      }
+      phaseRef.current = 'drifting';
+      requestAnimationFrame(() => fg?.d3ReheatSimulation());
     } else {
       setPaused(true);
       setStatus('motion paused.');
@@ -428,7 +436,7 @@ export default function GraphCanvas({
       const lit = !!a.shown?.edges.has(link.id);
       const P = paletteRef.current; // [settings]
       if (a.shown && lit) return rgba(line ?? P.ink, 0.35 + 0.6 * a.t);
-      const base = link.edge.status === 'suggested' ? 0.3 : line ? (P.light ? 0.5 : 0.32) : P.light ? 0.35 : 0.2;
+      const base = link.edge.status === 'suggested' && decisionsRef.current[link.edge.id] !== 'accepted' ? 0.3 : line ? (P.light ? 0.5 : 0.32) : P.light ? 0.35 : 0.2;
       return rgba(line ?? P.neutral, base * alphaFor(false));
     },
     [linkColorOf],
@@ -483,7 +491,7 @@ export default function GraphCanvas({
       const a = animRef.current;
       if (node) {
         const wasOpen = a.target === 1 || performance.now() - lastTipClose.current < 300;
-        a.shown = { id: node.id, ...neighborhood(world.edges, node.id) };
+        a.shown = { id: node.id, ...neighborhood(effectiveEdgesRef.current, node.id) };
         a.node = node;
         a.target = 1;
         const codes = node.courseIds.map((id) => courseCode.get(id)).filter(Boolean).join(', ');
@@ -544,11 +552,12 @@ export default function GraphCanvas({
             enableNodeDrag={false}
             linkColor={linkColor}
             linkWidth={linkWidth}
-            linkLineDash={(l) => (l.edge.status === 'suggested' ? [4, 4] : null)}
+            linkLineDash={(l) => (l.edge.status === 'suggested' && decisionsRef.current[l.edge.id] !== 'accepted' ? [4, 4] : null)}
             // [settings] hidden subjects, and the "show suggested links" switch
             nodeVisibility={(n) => !n.domains.every((d) => hiddenSubjects.has(d)) && (!visibleIds || visibleIds.has(n.id))}
             linkVisibility={(l) => {
-              if ((!settings.showSuggested || !showSuggested) && l.edge.status === 'suggested') return false;
+              if (decisionsRef.current[l.edge.id] === 'rejected') return false; // dismissed by the user
+              if ((!settings.showSuggested || !showSuggested) && l.edge.status === 'suggested' && decisionsRef.current[l.edge.id] !== 'accepted') return false;
               const s = l.source as CanvasNode;
               const t = l.target as CanvasNode;
               // [search] hidden by a subject setting, or left out by the search, filters or Focus
@@ -561,7 +570,7 @@ export default function GraphCanvas({
             onRenderFramePost={onFramePost}
             autoPauseRedraw={false}
             cooldownTicks={paused ? 0 : Infinity}
-            cooldownTime={settled ? Infinity : SETTLE_MS}
+            cooldownTime={Infinity}
             onEngineStop={onEngineStop}
           />
         )}
@@ -585,7 +594,7 @@ export default function GraphCanvas({
           </div>
         )}
       </div>
-      <NodeDetail world={world} nodeId={selectedId} onSelect={setSelectedId} onClose={() => setSelectedId(null)} />
+      <NodeDetail world={detailWorld} nodeId={selectedId} onSelect={setSelectedId} onClose={() => setSelectedId(null)} onDecide={decideEdge} note={edgeNote} />
       {/* Screen readers hear the hovered name, and the map's status. */}
       <p aria-live="polite" className="sr-only">
         {tip ? `${tip.label}. ${tip.meta}.` : status}

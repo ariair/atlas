@@ -4,6 +4,7 @@ import { getDb } from './client';
 import { users, courses, topics, nodes, edges, deadlines, documents, aiUsage } from './schema';
 import { rowsToWorld, worldToRows } from './world';
 import type { NodePatch } from '../lib/nodePatch';
+import type { DeadlinePatch } from '../lib/deadlinePatch';
 import { slug } from '../lib/ingest/commit';
 import { renameDomain, yearsFor } from '../lib/manage';
 import { mergeNodeFields, rewriteDeadlineNodeIds, rewriteEdgesForMerge } from '../lib/merge';
@@ -361,4 +362,29 @@ export async function getAccountSummary(userId: string) {
     .where(and(eq(aiUsage.userId, userId), sql`${aiUsage.day} = current_date`))
     .then((r) => r[0]?.calls ?? 0);
   return { courses: c, topics: t, items: n, links: e, suggestedLinks: suggested, deadlines: d, savedReadings: docs, aiCallsToday: used };
+}
+
+/** Edit one deadline. A date makes it "confirmed"; clearing the date marks it "needs_review" again. */
+export async function updateDeadline(userId: string, id: string, patch: DeadlinePatch) {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select().from(deadlines).where(and(eq(deadlines.userId, userId), eq(deadlines.id, id)));
+    if (!row) return { status: 'missing' as const };
+    const set: Partial<typeof deadlines.$inferInsert> = {};
+    if (patch.title !== undefined) set.title = patch.title;
+    if (patch.kind !== undefined) set.kind = patch.kind;
+    if (patch.weightPct !== undefined) set.weightPct = patch.weightPct;
+    if (patch.dueAt !== undefined) {
+      set.dueAt = patch.dueAt ? new Date(patch.dueAt) : null;
+      set.status = patch.dueAt ? 'confirmed' : 'needs_review';
+    }
+    const [updated] = await tx.update(deadlines).set(set).where(and(eq(deadlines.userId, userId), eq(deadlines.id, id))).returning();
+    return {
+      status: 'ok' as const,
+      deadline: {
+        id: updated.id, courseId: updated.courseId, title: updated.title, kind: updated.kind as import('../types').Deadline['kind'],
+        dueAt: updated.dueAt ? updated.dueAt.toISOString() : null, dueText: updated.dueText, weightPct: updated.weightPct,
+        nodeIds: updated.nodeIds, status: updated.status as import('../types').Deadline['status'],
+      },
+    };
+  });
 }
