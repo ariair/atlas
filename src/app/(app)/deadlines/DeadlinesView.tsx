@@ -47,6 +47,7 @@ function relative(d: Deadline, now: Date): string {
 export default function DeadlinesView() {
   const [world, setWorld] = useState<World | null>(null);
   const [editing, setEditing] = useState<string | null>(null); // the deadline being edited
+  const [adding, setAdding] = useState(false); // the add-assignment form is open
   const [saveNote, setSaveNote] = useState('');
   const [error, setError] = useState('');
   const [now, setNow] = useState<Date | null>(null);
@@ -108,6 +109,14 @@ export default function DeadlinesView() {
     setSaveNote(demo ? `Updated “${updated.title}”. Demo mode: this change is not saved.` : `Saved “${updated.title}”.`);
   }
 
+  // A new assignment was added (or kept in memory in demo mode): show it without reloading.
+  function applyAdd(created: Deadline, demo: boolean, linked: number) {
+    setWorld((w) => (w ? { ...w, deadlines: [...w.deadlines, created] } : w));
+    setAdding(false);
+    const links = linked > 0 ? ` Atlas found ${linked} possible ${linked === 1 ? 'link' : 'links'}; check them on the map.` : '';
+    setSaveNote(demo ? `Added “${created.title}”. Demo mode: this is not saved.` : `Added “${created.title}”.${links}`);
+  }
+
   function clearFilters() {
     setQ('');
     setCourseId('all');
@@ -162,6 +171,22 @@ export default function DeadlinesView() {
 
   return (
     <div className="mt-8 space-y-5">
+      {/* Add an assignment, quiz or exam by hand */}
+      {world.courses.length > 0 && (
+        <section aria-label="Add an assignment" className={card} style={delay(0)}>
+          {adding ? (
+            <AddDeadline courses={world.courses} onAdded={applyAdd} onCancel={() => setAdding(false)} />
+          ) : (
+            <div className="flex flex-wrap items-center justify-between gap-3">
+              <p className="text-ink-muted">Missing something? Add an assignment, quiz or exam to a course.</p>
+              <button type="button" className="btn rounded-full" aria-expanded={false} onClick={() => { setSaveNote(''); setAdding(true); }}>
+                Add assignment
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
       {/* Filters */}
       <section aria-label="Filters" className={card} style={delay(1)}>
         <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-4">
@@ -436,6 +461,88 @@ function EditDeadline({ deadline, onSaved, onCancel }: { deadline: Deadline; onS
       {error && <p role="alert" className="rounded-xl border-2 border-[#D67A48] bg-[#D67A48]/10 p-3"><strong>Problem: </strong>{error}</p>}
       <div className="flex gap-2">
         <button type="submit" disabled={busy} className="btn btn-primary rounded-full">{busy ? 'Saving…' : 'Save'}</button>
+        <button type="button" onClick={onCancel} disabled={busy} className="btn rounded-full">Cancel</button>
+      </div>
+    </form>
+  );
+}
+
+/** Add an assignment, quiz or exam to a course. Saves with POST /api/deadlines; if the student says what it covers, Atlas also looks for links. */
+function AddDeadline({ courses, onAdded, onCancel }: { courses: Course[]; onAdded: (d: Deadline, demo: boolean, linked: number) => void; onCancel: () => void }) {
+  const [courseId, setCourseId] = useState(courses[0]?.id ?? '');
+  const [title, setTitle] = useState('');
+  const [kind, setKind] = useState<string>('assignment');
+  const [due, setDue] = useState('');
+  const [weight, setWeight] = useState('');
+  const [covers, setCovers] = useState('');
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const field = 'min-h-11 w-full rounded-lg border border-rule-strong bg-ground/60 px-3 text-lg text-ink transition-colors duration-150 hover:border-ink-muted focus:border-ink-muted';
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const w = weight.trim() === '' ? null : Number(weight);
+    if (!title.trim()) return setError('Give it a name.');
+    if (w !== null && (!Number.isFinite(w) || w < 0 || w > 100)) return setError('The weight must be between 0 and 100.');
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch('/api/deadlines', {
+        method: 'POST',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ courseId, title: title.trim(), kind, dueAt: due ? new Date(due).toISOString() : null, weightPct: w, covers: covers.trim() || undefined }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `The server answered ${res.status}.`);
+      onAdded(data.deadline as Deadline, !!data?.demo, Number(data?.linked ?? 0));
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'We could not add that. Try again.');
+    }
+    setBusy(false);
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-3" aria-label="Add an assignment">
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[1fr_2fr_1fr_1.4fr_0.8fr]">
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          course
+          <select className={field} value={courseId} onChange={(e) => setCourseId(e.target.value)}>
+            {courses.map((c) => <option key={c.id} value={c.id}>{c.code}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          name
+          <input autoFocus className={field} value={title} maxLength={200} placeholder="e.g. Quiz 0" onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          type
+          <select className={field} value={kind} onChange={(e) => setKind(e.target.value)}>
+            {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          due (your time)
+          <input className={field} type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          weight %
+          <input className={field} type="number" min={0} max={100} step="0.5" value={weight} onChange={(e) => setWeight(e.target.value)} />
+        </label>
+      </div>
+      <label className="flex flex-col gap-1.5 text-ink-muted">
+        what does it cover? (optional)
+        <textarea
+          className={`${field} min-h-20 py-2 normal-case`}
+          value={covers}
+          maxLength={600}
+          placeholder="e.g. prerequisite material from CS 110 and CS 121. Atlas will look for the topics it could test."
+          onChange={(e) => setCovers(e.target.value)}
+        />
+      </label>
+      <p className="text-base text-ink-muted">You can leave the date empty and add it later with Edit.</p>
+      {error && <p role="alert" className="rounded-xl border-2 border-[#D67A48] bg-[#D67A48]/10 p-3"><strong>Problem: </strong>{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy} className="btn btn-primary rounded-full">{busy ? 'Adding…' : 'Add'}</button>
         <button type="button" onClick={onCancel} disabled={busy} className="btn rounded-full">Cancel</button>
       </div>
     </form>
