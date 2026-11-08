@@ -104,3 +104,57 @@ export function buildDraft(ai: AiExtraction, course: CourseInfo): ExtractionDraf
     topics, nodes, edges, deadlines, warnings,
   });
 }
+
+/**
+ * Notes for a class that is already on the map: only NEW concepts become nodes (an idea the class already has is skipped),
+ * and an edge may point at an existing concept by its label. No deadlines (notes rarely have real ones).
+ * The commit step (draftToNoteAdditions) turns labels into ids.
+ */
+export function buildNotesDraft(ai: AiExtraction, course: CourseInfo, existingLabels: string[]): ExtractionDraft {
+  const key = (s: string) => s.trim().toLowerCase();
+  const have = new Set(existingLabels.map(key));
+  const warnings = ai.warnings.map((w) => clip(w, MAX.warning)).filter(Boolean).slice(0, MAX.warnings);
+  const nodes: ExtractionDraft['nodes'] = [];
+  const seen = new Set<string>();
+  let skipped = 0;
+  for (const c of ai.concepts) {
+    const label = clip(c.label, MAX.label);
+    if (!label) continue;
+    if (have.has(key(label)) || seen.has(key(label))) {
+      skipped++;
+      continue;
+    }
+    seen.add(key(label));
+    nodes.push({
+      label, type: 'concept', courseIds: [], domains: [course.domain], years: [course.year],
+      topicId: c.topic ? clip(c.topic, MAX.topic) || null : null, summary: clip(c.summary, MAX.summary),
+    });
+  }
+  if (skipped > 0) warnings.push(`Skipped ${skipped} idea${skipped === 1 ? '' : 's'} this class already has.`);
+
+  const known = new Map<string, string>([...existingLabels.map((l) => [key(l), l] as const), ...nodes.map((n) => [key(n.label), n.label] as const)]);
+  const edges: ExtractionDraft['edges'] = [];
+  const edgeKeys = new Set<string>();
+  let dropped = 0;
+  for (const e of ai.edges) {
+    const from = known.get(key(clip(e.from, MAX.label)));
+    const to = known.get(key(clip(e.to, MAX.label)));
+    const k = `${from && key(from)}>${to && key(to)}>${e.type}`;
+    // At least one end must be new: links between two old concepts are not what these notes are for.
+    const oneNew = (from && seen.has(key(from))) || (to && seen.has(key(to)));
+    if (!from || !to || key(from) === key(to) || edgeKeys.has(k) || !oneNew) {
+      dropped++;
+      continue;
+    }
+    edgeKeys.add(k);
+    edges.push({ from, to, type: e.type, label: e.label?.trim() || null });
+  }
+  if (dropped > 0) warnings.push(`Dropped ${dropped} link(s) that pointed to unknown or duplicate items.`);
+  if (nodes.length === 0) warnings.push('These notes did not add any new ideas to this class.');
+
+  const topics = [...new Set([...ai.topics, ...nodes.map((n) => n.topicId).filter((t): t is string => !!t)].map((t) => clip(t, MAX.topic)).filter(Boolean))];
+  return ExtractionDraftSchema.parse({
+    course: { code: course.code, title: course.title, domain: course.domain, year: course.year, term: course.term },
+    topics, nodes, edges, deadlines: [], warnings,
+  });
+}

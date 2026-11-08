@@ -13,14 +13,14 @@ const compactNode = (n: WorldNode, code: Map<string, string>) => ({
 });
 
 /** Never throws: linking is a bonus, so any failure just means "no suggestions this time". */
-export async function linkNewCourse(userId: string, courseId: string): Promise<LinkingResult> {
+export async function linkNewCourse(userId: string, courseId: string, onlyNodeIds?: Set<string>): Promise<LinkingResult> {
   try {
     if (process.env.AI_ENABLED === 'false') return { added: 0, skipped: 'AI is turned off.' };
     const world = await getWorldForUser(userId);
     const code = new Map(world.courses.map((c) => [c.id, c.code]));
     // Concepts, plus quizzes, assignments and exams (with their descriptions) so they get linked too.
     const items = world.nodes.filter((n) => n.type === 'concept' || n.type === 'assignment' || n.type === 'exam');
-    const fresh = items.filter((n) => n.courseIds.includes(courseId)).map((n) => compactNode(n, code));
+    const fresh = items.filter((n) => n.courseIds.includes(courseId) && (!onlyNodeIds || onlyNodeIds.has(n.id))).map((n) => compactNode(n, code));
     const existing = items.filter((n) => !n.courseIds.includes(courseId)).map((n) => compactNode(n, code));
     if (fresh.length === 0 || existing.length === 0) return { added: 0, skipped: 'No other courses to link to yet.' };
 
