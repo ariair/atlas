@@ -1,16 +1,21 @@
 'use client';
 
 // Log in / sign up / log out, on the right of the floating nav (styled like the rest of the pill).
-// Shows nothing when login is not set up. Plain <a> links on purpose: they start a login flow, so the
+// Wide windows show them in the bar; narrow ones fold them into a person-icon drop-down.
+// While login is not set up (or still loading) log in and sign up show as inactive buttons. Plain <a> links on purpose: they start a login flow, so the
 // browser must not pre-fetch them.
-import { useEffect, useState } from 'react';
+import { useEffect, useRef, useState } from 'react';
 
 type Auth = { enabled: boolean; loggedIn: boolean; name: string | null };
-const ghost = "btn relative hidden min-h-9 rounded-full border-transparent bg-transparent px-3.5 after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
-const solid = "btn btn-primary relative hidden min-h-9 rounded-full px-4 after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
+const ghost = "btn relative hidden min-h-9 rounded-full border-transparent bg-transparent px-[clamp(0.5rem,1.2vw,0.875rem)] after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
+const solid = "btn btn-primary relative hidden min-h-9 rounded-full px-[clamp(0.625rem,1.4vw,1rem)] after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
+const LOGIN = '/auth/login?returnTo=%2Fworld';
+const SIGNUP = '/auth/login?screen_hint=signup&returnTo=%2Fworld';
 
 export default function AuthLinks() {
   const [auth, setAuth] = useState<Auth | null>(null);
+  const [open, setOpen] = useState(false);
+  const box = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     fetch('/api/demo')
@@ -19,19 +24,70 @@ export default function AuthLinks() {
       .catch(() => {});
   }, []);
 
-  if (!auth?.enabled) return null;
-  if (auth.loggedIn) {
-    return (
-      <>
-        {auth.name && <span className="hidden max-w-[10rem] truncate px-2 text-ink-muted lg:block">{auth.name}</span>}
-        <a href="/auth/logout" className={ghost}>log out</a>
-      </>
-    );
-  }
+  // Close the drop-down on Escape or a click outside it.
+  useEffect(() => {
+    if (!open) return;
+    const onKey = (e: KeyboardEvent) => e.key === 'Escape' && setOpen(false);
+    const onDown = (e: PointerEvent) => {
+      if (box.current && !box.current.contains(e.target as Node)) setOpen(false);
+    };
+    document.addEventListener('keydown', onKey);
+    document.addEventListener('pointerdown', onDown);
+    return () => {
+      document.removeEventListener('keydown', onKey);
+      document.removeEventListener('pointerdown', onDown);
+    };
+  }, [open]);
+
+  const live = !!auth?.enabled;
+  const items = auth?.enabled && auth.loggedIn
+    ? [{ href: '/auth/logout', label: 'log out', primary: false }]
+    : [
+        { href: LOGIN, label: 'log in', primary: false },
+        { href: SIGNUP, label: 'sign up', primary: true },
+      ];
   return (
     <>
-      <a href="/auth/login?returnTo=%2Fworld" className={ghost}>log in</a>
-      <a href="/auth/login?screen_hint=signup&returnTo=%2Fworld" className={solid}>sign up</a>
+      {auth?.enabled && auth.loggedIn && auth.name && <span className="hidden max-w-[10rem] truncate px-2 text-ink-muted lg:block">{auth.name}</span>}
+      {items.map((i) =>
+        live ? (
+          <a key={i.label} href={i.href} className={i.primary ? solid : ghost}>
+            {i.label}
+          </a>
+        ) : (
+          <button key={i.label} type="button" aria-disabled="true" title="coming soon" className={i.primary ? solid : ghost}>
+            {i.label}
+          </button>
+        ),
+      )}
+      <div ref={box} className="relative sm:hidden">
+        <button type="button" className="map-btn" aria-label="Account" aria-expanded={open} aria-controls="account-menu" onClick={() => setOpen((o) => !o)}>
+          <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
+            <path d={open ? 'M6 6l12 12M18 6L6 18' : 'M12 12a4 4 0 1 0 0-8 4 4 0 0 0 0 8zM4 20c0-3.5 3.6-6 8-6s8 2.5 8 6'} />
+          </svg>
+        </button>
+        <div
+          id="account-menu"
+          role="region"
+          aria-label="Account"
+          data-open={open}
+          style={{ '--pop-origin': '100% 0%' } as React.CSSProperties}
+          className="pop-panel absolute right-0 top-[calc(100%+10px)] z-30 flex w-[min(16rem,calc(100vw-2rem))] gap-2 rounded-xl border border-white/10 bg-surface/90 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
+        >
+          {items.map((i) => {
+            const cls = `btn flex-1 rounded-full ${i.primary ? 'btn-primary' : 'border-transparent bg-transparent'}`;
+            return live ? (
+              <a key={i.label} href={i.href} tabIndex={open ? 0 : -1} className={cls}>
+                {i.label}
+              </a>
+            ) : (
+              <button key={i.label} type="button" aria-disabled="true" title="coming soon" tabIndex={open ? 0 : -1} className={cls}>
+                {i.label}
+              </button>
+            );
+          })}
+        </div>
+      </div>
     </>
   );
 }

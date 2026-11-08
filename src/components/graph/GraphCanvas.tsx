@@ -274,6 +274,12 @@ export default function GraphCanvas({ world }: { world: World }) {
         setStatus('map settled.');
         return;
       }
+      // From here on only the drift moves the dots. The layout forces are switched off, so pausing and
+      // resuming (which reheats the simulation) can no longer push the islands further apart each time.
+      if (fg) {
+        for (const name of ['x', 'y', 'charge', 'collide']) fg.d3Force(name, null);
+        (fg.d3Force('link') as unknown as ForceLink<CanvasNode, CanvasLink> | undefined)?.strength(0); // keeps ids resolved
+      }
       phaseRef.current = 'drifting';
       setStatus('map settled. it drifts gently; use pause motion to stop it.');
       fg?.d3ReheatSimulation();
