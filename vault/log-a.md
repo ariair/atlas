@@ -60,3 +60,8 @@
 ## 2026-11-08: Map toggle and phone menu bar (Person A)
 - `BubbleToggle` (components/ui) gives the map | outline switch the same sliding bubble as the top bar. Person B's behaviour in WorldView is unchanged (outline still moves focus to the Outline heading).
 - Phone bar (under 640px): logo with its name always shown, bell, three-bar menu at the far right holding every page link plus log in / sign up (`AuthLinks variant="menu"`). Adding the study page later is one entry in LINKS. Top bar is now z-40 so its menus sit above the map controls; menus are solid.
+
+## 2026-11-08: Study page flow, reset, PDFs (Person A, in Person B's study files)
+- Study is now three steps: choose a class, choose topics from it, then pick prerequisite and associated topics (`relatedTopics` in src/lib/tutor/related.ts, tested; accepted links only, same rule as the backend). Ticked extras are sent as selected topics; the backend still adds unticked prerequisites as background. `?nodes=` links jump to step 3.
+- Reset button (top right of the step bar) with an "are you sure" box; disabled until something is chosen.
+- PDFs: "Download PDF" (guide), "Download test (PDF)" and "Answer key (PDF)" open the print dialog showing only that sheet (printSheet.ts, PrintSheets.tsx, print rules at the end of globals.css). Save as PDF in the dialog. A direct one-click download would need a PDF library.
