@@ -153,3 +153,9 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 ## 2026-11-08: Vercel deploy limit (Person B)
 - Hit the free-plan cap (100 deployments per rolling 24 hours, code api-deployments-free-per-day). Every push to any branch makes a preview deploy and every merge to main makes a production deploy, plus manual `vercel deploy --prod` runs.
 - Added `vercel.json` turning off preview deploys for a/canvas and b/ingest. Merging to main still deploys by itself, so manual `vercel deploy --prod` is not needed. Shared deploy config: tell Person A.
+
+## 2026-11-08: Study for this, notes into a class, upload page wording (Person B)
+- Deadlines page: "Study for this" on every deadline opens /study with its related topics chosen (`lib/studyLink.ts`: topics the deadline names, plus concepts linked to its exam/assignment dot, else the whole course; max 25). No edit to the study screen (it already reads `?nodes=`).
+- Upload page: choose "a new class" or "notes for a class I already have". Notes mode: `POST /api/ingest` with `notesForCourseId` (course read from the database; prompt gets the class's existing concepts as data; draft keeps only NEW ideas, links may point at existing concepts, no deadlines), `POST /api/ingest/commit` with `notesForCourseId` (`draftToNoteAdditions`: adds new nodes/edges/topics, reuses topic names, no duplicates), then `linkNewCourse(userId, courseId, onlyNodeIds)` for the new ideas. No schema change. Needs an account (demo mode shows it disabled).
+- Page title is now "upload"; button "Upload more".
+- Tested: unit tests (notes.test.ts, studyLink.test.ts) and a faked-server browser run. Not tested with real AI or on the live site.

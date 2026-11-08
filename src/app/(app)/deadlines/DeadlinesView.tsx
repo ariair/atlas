@@ -9,6 +9,7 @@ import { GROUP_LABELS, GROUP_ORDER, groupDeadlines, groupKey, type DeadlineGroup
 import { generateIcs, googleCalendarUrl, isAllDay } from '@/lib/ics';
 import { courseColors } from '@/lib/graph/layout';
 import { priorityOf } from '@/lib/priority';
+import { relatedTopicIds, studyHref } from '@/lib/studyLink';
 
 const KINDS = ['assignment', 'quiz', 'midterm', 'final', 'project', 'other'] as const;
 const PRIORITIES = ['high', 'medium', 'low', 'not set'] as const;
@@ -159,6 +160,12 @@ export default function DeadlinesView() {
     <button type="button" className="btn rounded-full" aria-label={`Edit ${d.title}`} aria-expanded={editing === d.id} onClick={() => { setSaveNote(''); setEditing(editing === d.id ? null : d.id); }}>
       Edit
     </button>
+  );
+  // "Study for this": opens the study screen with the topics related to this deadline already chosen.
+  const studyBtn = (d: Deadline) => (
+    <a href={studyHref(relatedTopicIds(world!, d))} className="btn btn-primary rounded-full whitespace-nowrap" aria-label={`Study for ${d.title}`}>
+      Study for this
+    </a>
   );
   const gcalLink = (d: Deadline) => {
     const gcal = googleCalendarUrl(d, courses.get(d.courseId));
@@ -316,6 +323,7 @@ export default function DeadlinesView() {
                       </p>
                     </div>
                     <div className="flex flex-wrap gap-2">
+                      {studyBtn(d)}
                       {editBtn(d)}
                       {gcalLink(d)}
                     </div>
@@ -368,6 +376,7 @@ export default function DeadlinesView() {
                     <td className="p-3">{priorityOf(d.weightPct)}</td>
                     <td className="p-3 text-right">
                       <div className="flex justify-end gap-2">
+                        {studyBtn(d)}
                         {editBtn(d)}
                         {gcal && (
                           <a href={gcal} target="_blank" rel="noopener noreferrer" className="btn rounded-full whitespace-nowrap" aria-label={`Add ${d.title} to Google Calendar (opens in a new tab)`}>

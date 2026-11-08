@@ -25,6 +25,9 @@ export default function UploadFlow() {
   const [term, setTerm] = useState('');
   const [year, setYear] = useState('1');
   const [domains, setDomains] = useState<string[]>([]);
+  const [classes, setClasses] = useState<{ id: string; code: string; title: string }[]>([]); // classes already on the map
+  const [target, setTarget] = useState<'new' | 'existing'>('new'); // is this a new class, or notes for one you already have?
+  const [existingId, setExistingId] = useState('');
   const [addingDept, setAddingDept] = useState(false); // "Add new department" was chosen in the drop-down
   const [error, setError] = useState('');
   const [draft, setDraft] = useState<ExtractionDraft | null>(null);
@@ -39,7 +42,11 @@ export default function UploadFlow() {
   useEffect(() => {
     fetch('/api/world')
       .then((r) => (r.ok ? r.json() : null))
-      .then((w) => w && setDomains([...new Set<string>(w.courses.map((c: { domain: string }) => c.domain))].sort((a, b) => a.localeCompare(b))))
+      .then((w) => {
+        if (!w) return;
+        setDomains([...new Set<string>(w.courses.map((c: { domain: string }) => c.domain))].sort((a, b) => a.localeCompare(b)));
+        setClasses(w.courses.map((c: { id: string; code: string; title: string }) => ({ id: c.id, code: c.code, title: c.title })));
+      })
       .catch(() => {});
   }, []);
 
@@ -80,20 +87,29 @@ export default function UploadFlow() {
     return () => clearTimeout(t);
   }, [text, mode]);
 
+  const notesMode = target === 'existing';
+  const demoOnly = samples.length > 0; // demo mode: notes need an account
+
   // Typing a new department is needed when there are no earlier ones, when "Add new" is chosen, or when a sample brings one the list doesn't have.
   const isNewDept = domains.length === 0 || addingDept || (domain !== '' && !domains.includes(domain));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
     setError('');
+    if (target === 'existing' && !existingId) {
+      setError('Choose which class these notes are for.');
+      errorRef.current?.focus();
+      return;
+    }
     if (mode === 'text' ? !text.trim() : !file) {
-      setError(mode === 'text' ? 'Paste your syllabus text first.' : 'Choose a PDF first.');
+      setError(mode === 'text' ? `Paste your ${notesMode ? 'notes' : 'syllabus text'} first.` : 'Choose a PDF first.');
       errorRef.current?.focus();
       return;
     }
     setStep('loading');
     const body = new FormData();
-    for (const [k, v] of Object.entries({ code, title, domain, term, year })) body.set(k, v);
+    if (notesMode) body.set('notesForCourseId', existingId);
+    else for (const [k, v] of Object.entries({ code, title, domain, term, year })) body.set(k, v);
     if (mode === 'text') body.set('text', text);
     else if (file) body.set('file', file);
     try {
@@ -113,12 +129,16 @@ export default function UploadFlow() {
 
   async function confirm(final: ExtractionDraft): Promise<string | null> {
     try {
-      const res = await fetch('/api/ingest/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft: final, sampleId }) });
+      const res = await fetch('/api/ingest/commit', { method: 'POST', headers: { 'Content-Type': 'application/json' }, body: JSON.stringify({ draft: final, sampleId, ...(notesMode ? { notesForCourseId: existingId } : {}) }) });
       const data = await res.json();
       if (!res.ok) return data.error ?? 'We could not save that.';
       const added: number = data.linking?.added ?? 0;
       const links = added > 0 ? ` Atlas also found ${added} possible ${added === 1 ? 'link' : 'links'} to your other courses. They show as dashed lines until you accept them.` : '';
-      setSavedMessage(`Saved ${final.course.code}: ${final.nodes.length} items and ${final.deadlines.length} deadlines added.${links}`);
+      setSavedMessage(
+        notesMode
+          ? `Added ${data.added?.nodes ?? 0} new ${data.added?.nodes === 1 ? 'idea' : 'ideas'} and ${data.added?.edges ?? 0} ${data.added?.edges === 1 ? 'link' : 'links'} to ${final.course.code}.${links}`
+          : `Saved ${final.course.code}: ${final.nodes.length} items and ${final.deadlines.length} deadlines added.${links}`,
+      );
       setStep('done');
       return null;
     } catch {
@@ -139,9 +159,35 @@ export default function UploadFlow() {
 
       {(step === 'form' || step === 'loading') && (
         <form onSubmit={submit} className="max-w-3xl space-y-5" aria-busy={step === 'loading'}>
+          <fieldset className={`${card} space-y-4`} style={delay(1)}>
+            <legend className="sr-only">1. What this is for</legend>
+            <p aria-hidden="true" className={legend}>{badge(1)}what is this for?</p>
+            <div className="flex flex-wrap gap-2">
+              {([['new', 'A new class'], ['existing', 'Notes for a class I already have']] as const).map(([t, label]) => {
+                const off = t === 'existing' && (classes.length === 0 || demoOnly);
+                return (
+                  <label key={t} className={`flex min-h-11 items-center gap-2.5 rounded-full border px-4 transition-colors duration-150 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${off ? 'cursor-not-allowed border-rule text-ink-muted/60' : 'cursor-pointer'} ${target === t ? 'border-ink-muted bg-white/10 text-ink' : 'border-rule text-ink-muted hover:border-rule-strong'}`}>
+                    <input type="radio" name="target" checked={target === t} disabled={off} onChange={() => setTarget(t)} className="size-4 accent-[#CFCFCF]" /> {label}
+                  </label>
+                );
+              })}
+            </div>
+            {target === 'existing' && (
+              <div>
+                <label htmlFor="existing-class" className="font-medium">Which class?</label>
+                <select id="existing-class" value={existingId} onChange={(e) => setExistingId(e.target.value)} className={field}>
+                  <option value="" disabled>Choose a class…</option>
+                  {classes.map((c) => <option key={c.id} value={c.id}>{c.code}: {c.title}</option>)}
+                </select>
+                <p className="mt-2 max-w-prose text-ink-muted">Atlas adds the new ideas from your notes to this class and links them to what it already has and to your other classes. You review everything before it is saved.</p>
+              </div>
+            )}
+            {(classes.length === 0 || demoOnly) && <p className="text-ink-muted">{demoOnly ? 'Adding notes to a class needs an account. In demo mode you can add the sample syllabi as new classes.' : 'Add a class first, then you can add notes to it.'}</p>}
+          </fieldset>
+
           <fieldset className={`${card} space-y-4`} style={delay(2)}>
-            <legend className="sr-only">1. Your document</legend>
-            <p aria-hidden="true" className={legend}>{badge(1)}your document</p>
+            <legend className="sr-only">2. Your document</legend>
+            <p aria-hidden="true" className={legend}>{badge(2)}{notesMode ? 'your notes' : 'your document'}</p>
             {samples.length > 0 && (
               <div>
                 <label htmlFor="sample" className="font-medium">Use a sample syllabus (demo mode)</label>
@@ -160,8 +206,8 @@ export default function UploadFlow() {
             </div>
             {mode === 'text' ? (
               <div>
-                <label htmlFor="text" className="font-medium">Syllabus text</label>
-                <textarea id="text" value={text} onChange={(e) => setText(e.target.value)} rows={10} className={`${field} resize-y font-mono`} placeholder="Paste the syllabus here" />
+                <label htmlFor="text" className="font-medium">{notesMode ? 'Notes text' : 'Syllabus text'}</label>
+                <textarea id="text" value={text} onChange={(e) => setText(e.target.value)} rows={10} className={`${field} resize-y font-mono`} placeholder={notesMode ? 'Paste your notes here' : 'Paste the syllabus here'} />
               </div>
             ) : (
               <div>
@@ -171,9 +217,10 @@ export default function UploadFlow() {
             )}
           </fieldset>
 
+          {!notesMode && (
           <fieldset className={`${card} grid gap-4 sm:grid-cols-2`} style={delay(3)}>
-            <legend className="sr-only">2. Confirm the course</legend>
-            <p aria-hidden="true" className={`${legend} sm:col-span-2`}>{badge(2)}confirm the course</p>
+            <legend className="sr-only">3. Confirm the course</legend>
+            <p aria-hidden="true" className={`${legend} sm:col-span-2`}>{badge(3)}confirm the course</p>
             <div>
               <label htmlFor="code" className="font-medium">Course code</label>
               <input id="code" required value={code} onChange={(e) => { touched.current.code = true; setCode(e.target.value); }} className={field} placeholder="CSCI 220" />
@@ -225,6 +272,7 @@ export default function UploadFlow() {
               </select>
             </div>
           </fieldset>
+          )}
 
           <div className="rise" style={delay(4)}>
             <button type="submit" disabled={step === 'loading'} className={`${primaryButton} min-h-12 rounded-full px-7 text-[1.125rem]`}>
@@ -245,7 +293,7 @@ export default function UploadFlow() {
             <a href="/world" className={`${primaryButton} rounded-full`}>See it on the map</a>
             <a href="/deadlines" className={`${button} rounded-full`}>See deadlines</a>
             <button type="button" className={`${button} rounded-full`} onClick={() => { setStep('form'); setText(''); setFile(null); setDraft(null); touched.current = { code: false, title: false, term: false, year: false }; setCode(''); setTitle(''); setTerm(''); }}>
-              Add another course
+              Upload more
             </button>
           </div>
         </div>

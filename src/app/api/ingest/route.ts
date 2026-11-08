@@ -2,10 +2,10 @@ import { z } from 'zod';
 import { ExtractionDraftSchema } from '@/lib/schemas';
 import { authFailure, getUserId } from '@/lib/user';
 import { AIError } from '@/lib/ai/client';
-import { consumeAiCall, getCachedDraft, saveCachedDraft } from '@/db/queries';
+import { consumeAiCall, getCachedDraft, getWorldForUser, saveCachedDraft } from '@/db/queries';
 import { LIMITS, contentHash, countPdfPages, extractDraft } from '@/lib/ingest/extract';
 import { findSampleByText, isDemoRequest } from '@/lib/demo';
-import { buildDraft } from '@/lib/ingest/buildDraft';
+import { buildDraft, type CourseInfo } from '@/lib/ingest/buildDraft';
 import { AiExtractionSchema } from '@/lib/ingest/prompt';
 
 export const maxDuration = 120;
@@ -21,7 +21,8 @@ const FormSchema = z.object({
 const DAILY_LIMIT = Number(process.env.AI_DAILY_LIMIT ?? 30);
 const fail = (error: string, status: number) => Response.json({ error }, { status });
 
-// POST multipart form: course fields + either `text` or a PDF in `file`. Returns an ExtractionDraft (NOT saved).
+// POST multipart form: course fields (or `notesForCourseId` to add notes to a class already on the map) + either `text` or a PDF
+// in `file`. Returns an ExtractionDraft (NOT saved).
 export async function POST(request: Request) {
   let form: FormData;
   try {
@@ -30,12 +31,20 @@ export async function POST(request: Request) {
     return fail('We could not read that upload. Try again.', 400);
   }
 
-  const parsed = FormSchema.safeParse(Object.fromEntries(['code', 'title', 'domain', 'term', 'year'].map((k) => [k, form.get(k)])));
-  if (!parsed.success) return fail('Please fill in the course code, title, department, term and year.', 400);
-  const course = { ...parsed.data, year: parsed.data.year as 1 | 2 | 3 | 4 };
+  // Notes for a class that is already on the map: the course comes from the database, not the form.
+  const notesCourseId = form.get('notesForCourseId');
+  const notesMode = typeof notesCourseId === 'string' && notesCourseId.length > 0;
+
+  let course: CourseInfo = { code: '', title: '', domain: '', term: '', year: 1 };
+  if (!notesMode) {
+    const parsed = FormSchema.safeParse(Object.fromEntries(['code', 'title', 'domain', 'term', 'year'].map((k) => [k, form.get(k)])));
+    if (!parsed.success) return fail('Please fill in the course code, title, department, term and year.', 400);
+    course = { ...parsed.data, year: parsed.data.year as 1 | 2 | 3 | 4 };
+  }
 
   // Demo mode: replay the recorded response for a sample syllabus. No database, no AI.
   if (isDemoRequest(request)) {
+    if (notesMode) return fail('Adding notes needs an account. Log in or sign up to add notes to a class.', 400);
     const pasted = form.get('text');
     const sample = typeof pasted === 'string' ? findSampleByText(pasted) : undefined;
     if (!sample) return fail('Demo mode can only read the three sample syllabi. Choose one with "Use a sample syllabus".', 400);
@@ -69,7 +78,21 @@ export async function POST(request: Request) {
     if (unauth) return unauth;
     throw err;
   }
-  const hash = contentHash({ course, text, pdf });
+  let existing: string[] | undefined;
+  if (notesMode) {
+    try {
+      const world = await getWorldForUser(userId);
+      const found = world.courses.find((c) => c.id === notesCourseId);
+      if (!found) return fail('That class was not found.', 404);
+      course = { code: found.code, title: found.title, domain: found.domain, term: found.term, year: found.year as 1 | 2 | 3 | 4 };
+      existing = world.nodes.filter((n) => n.type === 'concept' && n.courseIds.includes(found.id)).map((n) => n.label).slice(0, 150);
+    } catch (err) {
+      const unauth = authFailure(err);
+      if (unauth) return unauth;
+      return fail('We could not load that class. Try again.', 500);
+    }
+  }
+  const hash = contentHash({ course, text, pdf, existing });
 
   try {
     // Repeat upload: reuse the saved structure, no AI call.
@@ -83,7 +106,7 @@ export async function POST(request: Request) {
       return fail('You have reached today\'s AI limit. Try again tomorrow, or use demo mode (?demo=1).', 429);
     }
 
-    const draft = await extractDraft({ course, text, pdf });
+    const draft = await extractDraft({ course, text, pdf, existing });
     await saveCachedDraft(userId, hash, filename, draft); // structure only, never the file
     return Response.json({ draft, cached: false });
   } catch (err) {
