@@ -533,3 +533,8 @@ a {
     color: var(--ink);
   }
 }
+
+/* Light theme: the map key rests at 72% opacity on dark, which is too faint on a light background. */
+:root[data-theme="light"] .map-key {
+  opacity: 1;
+}

@@ -66,6 +66,17 @@ export default function WorldView() {
       </div>
     );
   }
+  // [auth] A brand-new account has no courses yet: invite them to add one instead of showing a blank map.
+  if (state.world.nodes.length === 0) {
+    return (
+      <div className="absolute inset-0 grid place-items-center px-6">
+        <div className="flex max-w-[40ch] flex-col items-center gap-4 text-center">
+          <p>your map is empty. add your first course and atlas will build the map from your syllabus.</p>
+          <a href="/upload" className="btn btn-primary">add a course</a>
+        </div>
+      </div>
+    );
+  }
   return (
     <>
       <GraphCanvas world={state.world} />

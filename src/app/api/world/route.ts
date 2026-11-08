@@ -1,3 +1,4 @@
+import { authFailure } from '@/lib/user';
 import { connection } from 'next/server';
 import { loadWorld } from '@/db/loadWorld';
 
@@ -8,6 +9,8 @@ export async function GET(request: Request) {
   try {
     return Response.json(await loadWorld(request));
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[world] database error:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'Could not load your world. Try again, or add ?demo=1 to use demo mode.' }, { status: 500 });
   }

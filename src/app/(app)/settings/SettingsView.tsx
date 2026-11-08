@@ -4,6 +4,7 @@ import { useCallback, useEffect, useState } from 'react';
 import { WorldSchema } from '@/lib/schemas';
 import type { World } from '@/types';
 import { call } from './api';
+import AccountSettings, { type AuthInfo } from './AccountSettings';
 import DataPrivacy, { type Summary } from './DataPrivacy';
 import DisplaySettings from './DisplaySettings';
 import ManageSubjects from './ManageSubjects';
@@ -15,13 +16,14 @@ export default function SettingsView() {
   const [world, setWorld] = useState<World | null>(null);
   const [summary, setSummary] = useState<Summary | null>(null);
   const [demo, setDemo] = useState(false);
+  const [auth, setAuth] = useState<AuthInfo | null>(null);
   const [loadError, setLoadError] = useState('');
   const [version, setVersion] = useState(0);
   const [message, setMessage] = useState<Message>(null);
 
   useEffect(() => {
     let cancelled = false;
-    Promise.all([call<unknown>('/api/world'), call<{ demo: boolean }>('/api/demo'), call<Summary>('/api/me')]).then(([w, d, me]) => {
+    Promise.all([call<unknown>('/api/world'), call<{ demo: boolean; auth?: AuthInfo }>('/api/demo'), call<Summary>('/api/me')]).then(([w, d, me]) => {
       if (cancelled) return;
       const parsed = w.ok ? WorldSchema.safeParse(w.data) : null;
       if (parsed?.success) {
@@ -30,7 +32,10 @@ export default function SettingsView() {
       } else {
         setLoadError(w.ok ? 'Your data was not in the expected shape.' : w.error);
       }
-      if (d.ok) setDemo(d.data.demo);
+      if (d.ok) {
+        setDemo(d.data.demo);
+        setAuth(d.data.auth ?? null);
+      }
       if (me.ok) setSummary(me.data);
     });
     return () => {
@@ -45,7 +50,7 @@ export default function SettingsView() {
   return (
     <div className="mt-6">
       <nav aria-label="Settings sections" className="flex flex-wrap gap-x-5 gap-y-1">
-        {[['appearance', 'Appearance'], ['map', 'Map'], ['subjects', 'Subjects and courses'], ['data', 'Your data']].map(([id, label]) => (
+        {[...(auth?.enabled ? [['account', 'Account']] : []), ['appearance', 'Appearance'], ['map', 'Map'], ['subjects', 'Subjects and courses'], ['data', 'Your data']].map(([id, label]) => (
           <a key={id} href={`#${id}`} className="inline-flex min-h-11 items-center underline">{label}</a>
         ))}
       </nav>
@@ -64,6 +69,7 @@ export default function SettingsView() {
         </p>
       )}
 
+      <AccountSettings auth={auth} />
       <DisplaySettings />
       <MapSettings subjects={subjects} />
       {world ? (

@@ -80,3 +80,28 @@ describe('isDemoRequest and cookies', () => {
     expect(samplesCookieHeader([])).toContain('atlas_demo_samples=;');
   });
 });
+
+describe('demo mode when login is switched on', () => {
+  const AUTH_ENV = { AUTH0_DOMAIN: 'x.auth0.com', AUTH0_CLIENT_ID: 'id', AUTH0_CLIENT_SECRET: 's', AUTH0_SECRET: 'abc' };
+  afterEach(() => {
+    for (const k of Object.keys(AUTH_ENV)) delete process.env[k];
+  });
+  it('logged-out visitors are always in demo mode', () => {
+    Object.assign(process.env, AUTH_ENV);
+    expect(isDemoRequest(req('http://x/api/world'))).toBe(true);
+    expect(isDemoRequest(req('http://x/api/world', 'other=1'))).toBe(true);
+  });
+  it('a visitor with a session cookie gets their real data', () => {
+    Object.assign(process.env, AUTH_ENV);
+    expect(isDemoRequest(req('http://x/api/world', '__session=abc'))).toBe(false);
+    expect(isDemoRequest(req('http://x/api/world', '__session__0=abc'))).toBe(false);
+  });
+  it('a logged-in user can still choose demo mode', () => {
+    Object.assign(process.env, AUTH_ENV);
+    expect(isDemoRequest(req('http://x/api/world?demo=1', '__session=abc'))).toBe(true);
+    expect(isDemoRequest(req('http://x/api/world', '__session=abc; atlas_demo=1'))).toBe(true);
+  });
+  it('is unchanged when login is not configured', () => {
+    expect(isDemoRequest(req('http://x/api/world'))).toBe(false);
+  });
+});

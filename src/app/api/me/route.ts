@@ -3,7 +3,7 @@ import { demoSampleIds, demoWorld } from '@/lib/demo';
 import { dailyAiLimit } from '@/lib/aiLimit';
 import { deleteUserData, getAccountSummary } from '@/db/queries';
 import { isDemoRequest, samplesCookieHeader } from '@/lib/demo';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 // Deletes ALL of the current user's data (courses, topics, nodes, edges, deadlines, documents).
 // In demo mode there is nothing stored, so it only forgets the samples added in this browser.
@@ -15,6 +15,8 @@ export async function DELETE(request: Request) {
     await deleteUserData(await getUserId());
     return Response.json({ ok: true });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[me] delete failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'Could not delete your data. Try again.' }, { status: 500 });
   }
@@ -39,6 +41,8 @@ export async function GET(request: Request) {
     const { aiCallsToday, ...stored } = await getAccountSummary(await getUserId());
     return Response.json({ demo: false, stored, ai: { usedToday: aiCallsToday, limit } });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[me] summary failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'Could not load your account summary.' }, { status: 500 });
   }

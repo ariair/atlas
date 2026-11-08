@@ -1,7 +1,7 @@
 import { mergeTopics } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { TopicMergeSchema } from '@/lib/nodePatch';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 // POST /api/topics/merge  { keepId, mergeId }  -> { ok }   (items move to the kept topic, the other is deleted)
 export async function POST(request: Request) {
@@ -14,6 +14,8 @@ export async function POST(request: Request) {
       ? Response.json({ ok: true })
       : Response.json({ error: 'One of those topics was not found.' }, { status: 404 });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[topics] merge failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not merge those topics. Try again.' }, { status: 500 });
   }

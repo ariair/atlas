@@ -1,7 +1,7 @@
 import { deleteNode, updateNode } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { NodePatchSchema } from '@/lib/nodePatch';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 // PATCH /api/nodes/:id  { label?, summary?, topicId?, mastery? }  -> { ok, node }
 // Rename a node, change its summary, move it to another topic (topicId: null removes it), or save a quiz mastery score (0 to 1).
@@ -20,6 +20,8 @@ export async function PATCH(request: Request, ctx: RouteContext<'/api/nodes/[id]
     if (result.status === 'bad_topic') return Response.json({ error: 'That topic does not exist.' }, { status: 400 });
     return Response.json({ ok: true, node: result.node });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[nodes] update failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not save that change. Try again.' }, { status: 500 });
   }
@@ -34,6 +36,8 @@ export async function DELETE(request: Request, ctx: RouteContext<'/api/nodes/[id
       ? Response.json({ ok: true })
       : Response.json({ error: 'That item was not found.' }, { status: 404 });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[nodes] delete failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not delete that item. Try again.' }, { status: 500 });
   }
