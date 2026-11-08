@@ -159,3 +159,7 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - Upload page: choose "a new class" or "notes for a class I already have". Notes mode: `POST /api/ingest` with `notesForCourseId` (course read from the database; prompt gets the class's existing concepts as data; draft keeps only NEW ideas, links may point at existing concepts, no deadlines), `POST /api/ingest/commit` with `notesForCourseId` (`draftToNoteAdditions`: adds new nodes/edges/topics, reuses topic names, no duplicates), then `linkNewCourse(userId, courseId, onlyNodeIds)` for the new ideas. No schema change. Needs an account (demo mode shows it disabled).
 - Page title is now "upload"; button "Upload more".
 - Tested: unit tests (notes.test.ts, studyLink.test.ts) and a faked-server browser run. Not tested with real AI or on the live site.
+
+## 2026-11-08 — Login and sign up off after the hackathon
+- `authConfigured()` now returns false when `DEMO=1`, so one env var switches login off even with the Auth0 keys still set: no /auth routes, inactive log in / sign up buttons, every visitor sees the demo (no database, no Claude).
+- To switch it on: add `DEMO=1` to Vercel production and redeploy. To switch it off: remove `DEMO` and redeploy. Accounts and data stay in the database untouched.
