@@ -215,9 +215,9 @@ export default function StudyScreen() {
         <section key="class" aria-labelledby="class-h" className={panel}>
           <h2 id="class-h" className={h2}>choose a class</h2>
           <p className="mt-1 text-ink-muted">Study one class at a time. You can add related topics from your other classes in step 3.</p>
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
             {groups.map(({ course: c, nodes }) => (
-              <li key={c.id}>
+              <li key={c.id} className="min-w-0">
                 <button
                   type="button"
                   aria-pressed={c.id === courseId}
@@ -243,11 +243,11 @@ export default function StudyScreen() {
         <section key="topics" aria-labelledby="topics-h" className={panel}>
           <h2 id="topics-h" className={h2}>choose topics</h2>
           <p className="mt-1 text-ink-muted">From {course.course.code}: {course.course.title}. {pickedValid.length} chosen.</p>
-          <ul className="mt-4 grid gap-2 sm:grid-cols-2">
+          <ul className="mt-4 grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
             {classTopics.map((n) => {
               const on = pickedValid.includes(n.id);
               return (
-                <li key={n.id}>
+                <li key={n.id} className="min-w-0">
                   <label className={`${chip} ${on ? 'border-ink-muted bg-white/10' : 'border-rule hover:border-rule-strong'}`}>
                     <input type="checkbox" className="size-5 shrink-0 accent-[#CFCFCF]" checked={on} onChange={() => toggle(pickedValid, setPicked, n.id)} />
                     <span>{n.label}</span>
@@ -284,12 +284,12 @@ export default function StudyScreen() {
               {list.length === 0 ? (
                 <p className="mt-2 text-ink-muted">{empty}</p>
               ) : (
-                <ul className="mt-2 grid gap-2 sm:grid-cols-2">
+                <ul className="mt-2 grid grid-cols-[minmax(0,1fr)] gap-2 sm:grid-cols-[repeat(2,minmax(0,1fr))]">
                   {list.map((n) => {
                     const on = extraValid.includes(n.id);
                     const code = codeOf.get(n.courseIds[0] ?? '');
                     return (
-                      <li key={n.id}>
+                      <li key={n.id} className="min-w-0">
                         <label className={`${chip} ${on ? 'border-ink-muted bg-white/10' : 'border-rule hover:border-rule-strong'}`}>
                           <input type="checkbox" className="size-5 shrink-0 accent-[#CFCFCF]" checked={on} onChange={() => toggle(extraValid, setExtra, n.id)} />
                           <span className="min-w-0">
