@@ -108,3 +108,6 @@
 - Map filter panel (`components/graph/WorldView.tsx`, `[search]`): the panel sat at a fixed top offset, but the toolbar wraps onto two rows on phones, so the panel covered the "search & filters" button and could not be closed. It now hangs under the whole toolbar (`top-full`), is at most 60% of the screen height, has a pinned header with an X, and Escape closes it.
 - Also synced: merged Person B's PR 25 (search keeps the selected node after "update links"), PR 26 (`vercel.json`: no preview deploys for a/canvas and b/ingest) and PR 27 (notes to an existing class, "Study for this" on deadlines). Merged cleanly alongside my Add assignment form and quiz linking.
 - Figma: drew the new landing page, node card (closed and open) and Add assignment form as new frames next to the old ones; the user then edited them into bracket-placeholder templates and asked me not to change the file (saved as a memory note).
+
+## 2026-11-08: CLAUDE.md refresh (Person A)
+- Updated CLAUDE.md: deploy note (merging to main should deploy by itself), relink and Add assignment in the ingest and pages notes, node card and filter panel details, Figma templates are the design basis.
