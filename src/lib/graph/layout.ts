@@ -11,6 +11,43 @@ export interface Point {
 export const DOMAIN_PALETTE = ['#E3A93D', '#78B4DE', '#3DAE8C', '#E8DE7A', '#C98AB0', '#D67A48', '#4A8CC0'];
 export const NEUTRAL_COLOR = '#9CA3AF';
 
+// Courses in the same department share a hue. To tell them apart each course gets its own shade of it:
+// the first course keeps the base colour, the next ones are lighter, darker, and so on. Course codes are
+// always shown next to the colour (key, name card, detail card), so colour is never the only cue.
+// Spread evenly from dark to light, and never close to white (white means a bridge dot).
+const SHADE_STEPS = [0, 0.55, -0.45, 0.28, -0.68];
+
+function mixHex(hex: string, target: number, t: number): string {
+  const n = parseInt(hex.slice(1), 16);
+  const ch = (v: number) => Math.round(v + (target - v) * t).toString(16).padStart(2, '0');
+  return `#${ch((n >> 16) & 255)}${ch((n >> 8) & 255)}${ch(n & 255)}`.toUpperCase();
+}
+
+/** The base colour made lighter (positive step) or darker (negative step). */
+export function shadeOf(base: string, step: number): string {
+  return step === 0 ? base : step > 0 ? mixHex(base, 255, step) : mixHex(base, 0, -step);
+}
+
+/** Shade for the course at `index` within its department. */
+export function courseShade(base: string, index: number): string {
+  return shadeOf(base, SHADE_STEPS[index % SHADE_STEPS.length]);
+}
+
+/**
+ * A colour per course: its department's colour, shaded when the department has several courses.
+ * Courses are ordered by year then code so the shades never depend on input order.
+ */
+export function courseColors(world: Pick<World, 'courses' | 'nodes'>): Map<string, string> {
+  const domains = allDomains(world);
+  const out = new Map<string, string>();
+  for (const [i, d] of domains.entries()) {
+    const base = DOMAIN_PALETTE[i % DOMAIN_PALETTE.length];
+    const inDomain = world.courses.filter((c) => c.domain === d).sort((a, b) => a.year - b.year || a.code.localeCompare(b.code));
+    inDomain.forEach((c, k) => out.set(c.id, inDomain.length > 1 ? courseShade(base, k) : base));
+  }
+  return out;
+}
+
 export const ANCHOR_STRENGTH = 0.12; // single-domain nodes
 export const SMALL_GROUP = 3; // groups this small (and not linked to a bridge) are pulled inward
 export const SMALL_GROUP_PULL = 0.3; // how far toward the map's middle, 0 to 1
@@ -186,6 +223,7 @@ export function toGraphData(world: World): CanvasGraph {
   const domains = allDomains(world);
   const anchors = computeAnchors(domains);
   const colors = new Map(domains.map((d, i) => [d, DOMAIN_PALETTE[i % DOMAIN_PALETTE.length]]));
+  const shades = courseColors(world);
   const byId = new Map(world.nodes.map((n) => [n.id, n]));
   const edges = world.edges.filter((e) => byId.has(e.from) && byId.has(e.to) && e.from !== e.to);
 
@@ -203,7 +241,7 @@ export function toGraphData(world: World): CanvasGraph {
       anchorX: a.x,
       anchorY: a.y,
       anchorStrength: a.strength,
-      color: colors.get(n.domains[0]) ?? NEUTRAL_COLOR,
+      color: shades.get(n.courseIds[0]) ?? colors.get(n.domains[0]) ?? NEUTRAL_COLOR, // this course's shade of its department colour
       strokeColor: n.domains.length > 1 ? (colors.get(n.domains[1]) ?? null) : null,
       x: a.x + r * Math.cos(angle),
       y: a.y + r * Math.sin(angle),

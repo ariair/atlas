@@ -196,7 +196,7 @@ export default function UploadFlow() {
 
           <div className="rise" style={delay(4)}>
             <button type="submit" disabled={step === 'loading'} className={`${primaryButton} min-h-12 rounded-full px-7 text-[1.125rem]`}>
-              {step === 'loading' ? 'Reading…' : 'Read my document'}
+              {step === 'loading' ? 'Reading…' : 'Read'}
             </button>
           </div>
         </form>
