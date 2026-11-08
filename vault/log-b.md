@@ -126,3 +126,10 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - Merged Person A's study flow (class > topics > related, reset, PDFs) and phone nav; synced to main through PR 15 to 17; deployed by the user.
 - CLAUDE.md updated: Auth0, tutor, search/Focus/Outline, settings, gotchas, sync-point steps.
 - Open: Accept/Reject UI for suggested links and a "study this" button in NodeDetail (backend exists, no UI); mastery colours on the map; rendered Mermaid diagram; confirm alerts bell replaces the welcome banner; real Sonnet test of upload and tutor on the live site; decide on closing Auth0 sign-ups; Devpost write-up and demo script.
+
+## 2026-11-07: Usernames and account drop-down (Person B)
+- Every account now has a unique lowercase username (3-20 letters, numbers, underscores). `users.username` (migration 0002), `src/lib/username.ts`, `GET/PUT /api/account`. New and older accounts without one get a required "choose a username" box.
+- Header: the username replaces the log out link and opens a drop-down (user settings = username/email, log out). New `[auth]` file `components/ui/AccountMenu.tsx`, small edit to `AuthLinks.tsx`. Person A restyles. The nav's "settings" page is separate (display settings).
+- Log out uses Auth0 `logoutStrategy: 'v2'` and `?returnTo=/`, so it goes straight to the home page instead of an Auth0 page.
+- Shared file touched: `src/db/schema.ts` (users.username). Run `npm run db:migrate` before relying on usernames.
+- Tested: tsc, lint, unit tests, build. Not tested logged in against real Auth0.

@@ -362,3 +362,24 @@ export async function getAccountSummary(userId: string) {
     .then((r) => r[0]?.calls ?? 0);
   return { courses: c, topics: t, items: n, links: e, suggestedLinks: suggested, deadlines: d, savedReadings: docs, aiCallsToday: used };
 }
+
+/** The user's chosen username, or null if they have not picked one yet. */
+export async function getUsername(userId: string): Promise<string | null> {
+  const [row] = await getDb().select({ username: users.username }).from(users).where(eq(users.id, userId));
+  return row?.username ?? null;
+}
+
+/** Saves a (lowercase) username. Returns 'taken' when somebody else already has it. */
+export async function setUsername(userId: string, username: string): Promise<'ok' | 'taken'> {
+  try {
+    await getDb()
+      .insert(users)
+      .values({ id: userId, username })
+      .onConflictDoUpdate({ target: users.id, set: { username } });
+    return 'ok';
+  } catch (err) {
+    const e = err as { code?: string; cause?: { code?: string } };
+    if (e.code === '23505' || e.cause?.code === '23505') return 'taken';
+    throw err;
+  }
+}
