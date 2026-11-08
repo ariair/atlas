@@ -19,3 +19,5 @@ The PRD section 5A says a search match highlights itself plus all transitive pre
 - 2026-11-07 (Person B, approved by the user): Light theme and display settings added. Person B made small marked edits ("[settings]") in Person A's globals.css, layout.tsx, AppNav, GraphCanvas and GraphLegend so the map follows the theme and can show node names, hide subjects and hide suggested links. Please review at the next sync. The PRD's "dark by default, light option, Atkinson Hyperlegible option" is now implemented.
 
 - 2026-11-07 (Person B, approved by the user): Auth0 login. While configured, anyone without a session is demo-only; this also settles the "lock down real mode before opening the site" item. Small marked [auth] edits in Person A's AppNav (login links) and WorldView (empty-map invitation).
+
+- 2026-11-07 (Person B, approved by the user): Search, Focus, filters and the Outline view built by Person B as new pure files + /outline; Person A wires search and filters into the map using useGraphView (steps in vault/log-b.md).
