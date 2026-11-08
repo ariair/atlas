@@ -1,16 +1,12 @@
 'use client';
 
 import { useSettings } from '@/lib/useSettings';
-import { Choice, Section } from './controls';
+import { Choice, Section, Switch } from './controls';
 
 export default function DisplaySettings() {
   const { settings, update, reset } = useSettings();
   return (
-    <Section
-      id="appearance"
-      title="Appearance"
-      intro="These are saved in this browser only. They apply to every page straight away."
-    >
+    <Section id="appearance" title="appearance" intro="These are saved in this browser only. They apply to every page straight away.">
       <Choice
         legend="Theme"
         value={settings.theme}
@@ -32,53 +28,37 @@ export default function DisplaySettings() {
           { value: 'xlarge', label: 'Extra large' },
         ]}
       />
-      <Choice
-        legend="Font"
-        hint="Atkinson Hyperlegible is designed to be easy to read, including for people with low vision or dyslexia."
-        value={settings.font}
-        onChange={(font) => update({ font })}
-        options={[
-          { value: 'default', label: 'Standard' },
-          { value: 'atkinson', label: 'Atkinson Hyperlegible' },
-        ]}
+      <Switch
+        label="Atkinson Hyperlegible font"
+        hint="Designed to be easy to read, including for people with low vision or dyslexia."
+        checked={settings.font === 'atkinson'}
+        onChange={(on) => update({ font: on ? 'atkinson' : 'default' })}
       />
-      <Choice
-        legend="Spacing"
+      <Switch
+        label="Relaxed spacing"
         hint="More room between lines, letters and words."
-        value={settings.spacing}
-        onChange={(spacing) => update({ spacing })}
-        options={[
-          { value: 'default', label: 'Standard' },
-          { value: 'relaxed', label: 'Relaxed' },
-        ]}
+        checked={settings.spacing === 'relaxed'}
+        onChange={(on) => update({ spacing: on ? 'relaxed' : 'default' })}
       />
-      <Choice
-        legend="Contrast"
+      <Switch
+        label="High contrast"
         hint="Stronger text and borders."
-        value={settings.contrast}
-        onChange={(contrast) => update({ contrast })}
-        options={[
-          { value: 'default', label: 'Standard' },
-          { value: 'high', label: 'High' },
-        ]}
+        checked={settings.contrast === 'high'}
+        onChange={(on) => update({ contrast: on ? 'high' : 'default' })}
       />
-      <Choice
-        legend="Motion"
-        hint="Turning motion off stops the map drifting and removes animations. Your device's own setting is always respected."
-        value={settings.motion}
-        onChange={(motion) => update({ motion })}
-        options={[
-          { value: 'system', label: 'Follow my device' },
-          { value: 'off', label: 'Turn off' },
-        ]}
+      <Switch
+        label="Turn off motion"
+        hint="Stops the map drifting and removes animations. Your device's own setting is always respected."
+        checked={settings.motion === 'off'}
+        onChange={(on) => update({ motion: on ? 'off' : 'system' })}
       />
-      <div className="rounded-lg border border-rule bg-surface p-4">
+      <div className="mt-4 rounded-xl border border-white/10 bg-white/[0.04] p-4">
         <p className="font-medium">Preview</p>
         <p className="mt-1 max-w-prose">
           Neural networks build on gradient descent, which builds on derivatives. Quiz 2 is due Thursday at 11:59 PM and counts for 5% of your grade.
         </p>
       </div>
-      <button type="button" className="btn" onClick={reset}>
+      <button type="button" className="btn mt-4 rounded-full" onClick={reset}>
         Reset display settings
       </button>
     </Section>

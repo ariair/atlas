@@ -3,9 +3,11 @@
 import { useState } from 'react';
 import type { ExtractionDraft } from '@/types';
 import { deleteDeadline, deleteNode, renameNode, updateDeadline, updateNode } from '@/lib/ingest/editDraft';
-import { button, focusRing } from './styles';
+import { button, primaryButton } from './styles';
 
-const input = `min-h-11 w-full rounded-md border border-zinc-400 bg-white px-2 py-1 text-lg text-black dark:bg-zinc-900 dark:text-white ${focusRing}`;
+const input = 'min-h-11 w-full rounded-lg border border-rule-strong bg-ground/60 px-2 py-1 text-lg text-ink transition-colors duration-150 hover:border-ink-muted focus:border-ink-muted';
+const panel = 'rise rounded-2xl border border-white/10 bg-surface/60 p-5 backdrop-blur-md sm:p-6';
+const delay = (i: number) => ({ '--i': i }) as React.CSSProperties;
 const KINDS = ['assignment', 'quiz', 'midterm', 'final', 'project', 'other'] as const;
 
 const pad = (n: number) => String(n).padStart(2, '0');
@@ -38,8 +40,8 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
 
   return (
     <div className="space-y-8">
-      <section aria-labelledby="rv-h">
-        <h2 id="rv-h" className="text-2xl font-semibold">
+      <section aria-labelledby="rv-h" className={panel} style={delay(0)}>
+        <h2 id="rv-h" className="text-2xl font-medium tracking-[-0.01em]">
           {draft.course.code}: {draft.course.title}
         </h2>
         <p>
@@ -47,29 +49,29 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
           {cached && ' (Reused an earlier reading of this same document.)'}
         </p>
         {draft.warnings.length > 0 && (
-          <div className="mt-3 rounded-md border border-zinc-500 p-3">
+          <div className="mt-3 rounded-xl border border-rule-strong bg-white/[0.04] p-3">
             <h3 className="font-semibold">Things to double-check</h3>
             <ul className="list-disc pl-6">{draft.warnings.map((w, i) => <li key={i}>{w}</li>)}</ul>
           </div>
         )}
       </section>
 
-      <section aria-labelledby="dl-h">
-        <h2 id="dl-h" className="text-2xl font-semibold">Deadlines ({draft.deadlines.length})</h2>
+      <section aria-labelledby="dl-h" className={panel} style={delay(1)}>
+        <h2 id="dl-h" className="text-2xl font-medium tracking-[-0.01em]">Deadlines ({draft.deadlines.length})</h2>
         <p>{needsReview > 0 ? `${needsReview} need a date. Add one, or leave it blank to keep it marked "Needs review".` : 'All deadlines have dates.'}</p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[56rem] border-collapse text-left">
             <caption className="sr-only">Deadlines found in the document</caption>
             <thead>
-              <tr className="border-b border-zinc-500">
+              <tr className="border-b border-rule-strong text-ink-muted">
                 <th className="p-2">Title</th><th className="p-2">Type</th><th className="p-2">Due (your time)</th>
                 <th className="p-2">Weight %</th><th className="p-2">Status</th><th className="p-2">Remove</th>
               </tr>
             </thead>
             <tbody>
               {draft.deadlines.map((d, i) => (
-                <tr key={i} className="border-b border-zinc-300 align-top dark:border-zinc-700">
-                  <td className="p-2"><input aria-label={`Title of deadline ${i + 1}`} className={input} value={d.title} onChange={(e) => setDraft(updateDeadline(draft, i, { title: e.target.value }))} /></td>
+                <tr key={i} className="border-b border-rule align-top">
+                  <td className="p-2"><input aria-label={`Title of deadline ${i + 1}`} className={`${input} min-w-48`} value={d.title} onChange={(e) => setDraft(updateDeadline(draft, i, { title: e.target.value }))} /></td>
                   <td className="p-2">
                     <select aria-label={`Type of ${d.title}`} className={`${input} min-w-40`} value={d.kind} onChange={(e) => setDraft(updateDeadline(draft, i, { kind: e.target.value as (typeof KINDS)[number] }))}>
                       {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
@@ -85,7 +87,7 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
                       onChange={(e) => setDraft(updateDeadline(draft, i, { weightPct: e.target.value === '' ? null : Number(e.target.value) }))} />
                   </td>
                   <td className="p-2 font-medium">{d.status === 'needs_review' ? '⚠ Needs review' : '✓ Confirmed'}</td>
-                  <td className="p-2"><button type="button" className={`${button} border border-zinc-500`} onClick={() => setDraft(deleteDeadline(draft, i))} aria-label={`Remove deadline ${d.title}`}>Remove</button></td>
+                  <td className="p-2"><button type="button" className={`${button} rounded-full`} onClick={() => setDraft(deleteDeadline(draft, i))} aria-label={`Remove deadline ${d.title}`}>Remove</button></td>
                 </tr>
               ))}
               {draft.deadlines.length === 0 && <tr><td colSpan={6} className="p-3">No deadlines found.</td></tr>}
@@ -94,22 +96,22 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
         </div>
       </section>
 
-      <section aria-labelledby="nd-h">
-        <h2 id="nd-h" className="text-2xl font-semibold">Topics and concepts ({draft.nodes.length})</h2>
+      <section aria-labelledby="nd-h" className={panel} style={delay(2)}>
+        <h2 id="nd-h" className="text-2xl font-medium tracking-[-0.01em]">Topics and concepts ({draft.nodes.length})</h2>
         <p>{draft.edges.length} links between them. Renaming or removing an item updates its links.</p>
         <div className="mt-3 overflow-x-auto">
           <table className="w-full min-w-[48rem] border-collapse text-left">
             <caption className="sr-only">Items found in the document</caption>
             <thead>
-              <tr className="border-b border-zinc-500"><th className="p-2">Name</th><th className="p-2">Kind</th><th className="p-2">Summary</th><th className="p-2">Remove</th></tr>
+              <tr className="border-b border-rule-strong text-ink-muted"><th className="p-2">Name</th><th className="p-2">Kind</th><th className="p-2">Summary</th><th className="p-2">Remove</th></tr>
             </thead>
             <tbody>
               {draft.nodes.map((n, i) => (
-                <tr key={i} className="border-b border-zinc-300 align-top dark:border-zinc-700">
-                  <td className="p-2"><input aria-label={`Name of item ${i + 1}`} className={input} value={n.label} onChange={(e) => setDraft(renameNode(draft, i, e.target.value))} /></td>
+                <tr key={i} className="border-b border-rule align-top">
+                  <td className="p-2"><input aria-label={`Name of item ${i + 1}`} className={`${input} min-w-48`} value={n.label} onChange={(e) => setDraft(renameNode(draft, i, e.target.value))} /></td>
                   <td className="p-2">{n.type}</td>
-                  <td className="p-2"><input aria-label={`Summary of ${n.label}`} className={input} value={n.summary} onChange={(e) => setDraft(updateNode(draft, i, { summary: e.target.value }))} /></td>
-                  <td className="p-2"><button type="button" className={`${button} border border-zinc-500`} onClick={() => setDraft(deleteNode(draft, i))} aria-label={`Remove ${n.label}`}>Remove</button></td>
+                  <td className="p-2"><input aria-label={`Summary of ${n.label}`} className={`${input} min-w-64`} value={n.summary} onChange={(e) => setDraft(updateNode(draft, i, { summary: e.target.value }))} /></td>
+                  <td className="p-2"><button type="button" className={`${button} rounded-full`} onClick={() => setDraft(deleteNode(draft, i))} aria-label={`Remove ${n.label}`}>Remove</button></td>
                 </tr>
               ))}
               {draft.nodes.length === 0 && <tr><td colSpan={4} className="p-3">Nothing found.</td></tr>}
@@ -118,12 +120,12 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
         </div>
       </section>
 
-      {error && <div role="alert" className="rounded-md border-2 border-red-700 p-3"><strong>Problem: </strong>{error}</div>}
-      <div className="flex flex-wrap gap-4">
-        <button type="button" onClick={save} disabled={saving || draft.nodes.length === 0} className={`${button} bg-blue-700 text-white disabled:opacity-60`}>
+      {error && <div role="alert" className="rounded-xl border-2 border-[#D67A48] bg-[#D67A48]/10 p-4"><strong>Problem: </strong>{error}</div>}
+      <div className="rise flex flex-wrap gap-3" style={delay(3)}>
+        <button type="button" onClick={save} disabled={saving || draft.nodes.length === 0} className={`${primaryButton} min-h-12 rounded-full px-7`}>
           {saving ? 'Saving…' : 'Confirm and save'}
         </button>
-        <button type="button" onClick={onBack} disabled={saving} className={`${button} border border-zinc-500`}>Back</button>
+        <button type="button" onClick={onBack} disabled={saving} className={`${button} min-h-12 rounded-full px-7`}>Back</button>
       </div>
     </div>
   );

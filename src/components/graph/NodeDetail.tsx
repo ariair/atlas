@@ -4,15 +4,8 @@
 // (for assignments, exams and anything with a deadline) the due date, weight and priority.
 // It rises out of the bottom-right of the map like the map key does out of the bottom-left.
 import { useMemo } from 'react';
+import { priorityOf } from '@/lib/priority';
 import type { GraphNode, World } from '@/types';
-
-// There is no priority field in the data: it is read from the mark weight (kept in words, not colour alone).
-function priorityOf(weightPct: number | null): string {
-  if (weightPct === null) return 'not set';
-  if (weightPct >= 20) return 'high';
-  if (weightPct >= 10) return 'medium';
-  return 'low';
-}
 
 const when = (iso: string) =>
   new Date(iso).toLocaleString(undefined, { weekday: 'short', month: 'short', day: 'numeric', hour: 'numeric', minute: '2-digit' });
