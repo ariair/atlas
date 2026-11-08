@@ -72,3 +72,6 @@
 - Upload: department is a drop-down of earlier departments plus "Add new department…" (opens a name box).
 - Map detail card: "ai suggested links" with keep / dismiss (PATCH /api/edges/:id; demo mode keeps the change on the page only).
 - Deadlines: Edit button on every deadline (timeline and list). New `PATCH /api/deadlines/:id`, `updateDeadline` in db/queries.ts, `lib/deadlinePatch.ts` (tested).
+
+## 2026-11-08: CLAUDE.md update (Person A)
+- Merged main (B's PR #19: usernames, account drop-down, CLAUDE.md refresh) and added my notes on top: grey look and Figma link, how the map layout works and the "setup must re-run when the page returns" gotcha, the UI shell, and a line per page (study, deadlines, settings, upload). B please read it before editing the map or nav.
