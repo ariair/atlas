@@ -10,6 +10,7 @@ const LINKS = [
   { href: '/world', label: 'map' },
   { href: '/upload', label: 'upload' },
   { href: '/deadlines', label: 'deadlines' },
+  { href: '/settings', label: 'settings' },
 ];
 
 export default function AppNav() {

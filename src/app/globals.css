@@ -229,3 +229,161 @@ a {
     scroll-behavior: auto !important;
   }
 }
+
+/* ==========================================================================
+   Display settings (Person B, prompt "settings"). Read from attributes that src/lib/settings.ts puts on <html>.
+   Nothing above this line was changed; everything here only overrides when a setting is switched on.
+   ========================================================================== */
+
+/* Tailwind's dark: variant follows the setting instead of the operating system. */
+@custom-variant dark (&:where([data-theme="dark"], [data-theme="dark"] *));
+
+/* Light theme: the same token names, light values. Subject lines are darker so they stay visible on light ground. */
+:root[data-theme="light"] {
+  color-scheme: light;
+  --ground: #f7f5ef;
+  --grid: #ece9e0;
+  --surface: #ffffff;
+  --surface-raised: #efece3;
+  --rule: #d8d4c8;
+  --rule-strong: #666d78;
+  --ink: #14181f;
+  --ink-muted: #4b525d;
+  --ink-on-light: #f7f5ef; /* text on the primary (ink-coloured) button */
+  --line-1: #b36b00;
+  --line-2: #005f99;
+  --line-3: #00775a;
+}
+/* Hairlines and shadows that were written as white-on-dark. */
+:root[data-theme="light"] .border-white\/10,
+:root[data-theme="light"] .border-white\/\[0\.06\] {
+  border-color: rgba(20, 24, 31, 0.16);
+}
+:root[data-theme="light"] .btn-primary:hover {
+  background: #000;
+  border-color: #000;
+}
+@media (hover: hover) and (pointer: fine) {
+  :root[data-theme="light"] .map-btn:hover {
+    background: rgba(20, 24, 31, 0.07);
+  }
+}
+:root[data-theme="light"] .map-tip,
+:root[data-theme="light"] .hero-tip {
+  box-shadow: 0 10px 30px rgba(20, 24, 31, 0.16) !important;
+}
+
+/* High contrast: stronger text and borders, thicker focus ring. */
+:root[data-theme="dark"][data-contrast="high"] {
+  --ink: #ffffff;
+  --ink-muted: #e8ebf0;
+  --rule: #4a5460;
+  --rule-strong: #b3bcc9;
+}
+:root[data-theme="light"][data-contrast="high"] {
+  --ink: #000000;
+  --ink-muted: #1c212b;
+  --rule: #8a919c;
+  --rule-strong: #343b46;
+}
+:root[data-contrast="high"] :focus-visible {
+  outline-width: 4px;
+}
+
+/* Text size scales everything that is sized in rem (the 18px floor only goes up). */
+:root[data-text-size="large"] {
+  font-size: 112.5%;
+}
+:root[data-text-size="xlarge"] {
+  font-size: 125%;
+}
+
+/* Atkinson Hyperlegible: designed for low vision and dyslexia. Numbers and codes keep their own mono font. */
+:root[data-font="atkinson"] body,
+:root[data-font="atkinson"] body :where(*):not(.font-mono):not(svg *) {
+  font-family: var(--font-atkinson), ui-sans-serif, system-ui, sans-serif !important;
+}
+
+/* Relaxed spacing (WCAG text-spacing): more room between lines, letters and words. */
+:root[data-spacing="relaxed"] body {
+  line-height: 1.8;
+  letter-spacing: 0.02em;
+  word-spacing: 0.12em;
+}
+
+/* Motion off: the same rule the system reduced-motion preference applies, switchable by hand. */
+:root[data-motion="off"] *,
+:root[data-motion="off"] *::before,
+:root[data-motion="off"] *::after {
+  animation-duration: 0.01ms !important;
+  animation-iteration-count: 1 !important;
+  transition-duration: 0.01ms !important;
+  scroll-behavior: auto !important;
+}
+
+/* Settings page controls: option "chips" that are real radio buttons. The check mark means the state is not shown by colour alone. */
+:root {
+  --danger: #ff9466;
+}
+:root[data-theme="light"] {
+  --danger: #b03a00;
+}
+@layer components {
+  .choice {
+    position: relative;
+    display: inline-flex;
+    align-items: center;
+    gap: 0.5rem;
+    min-height: 2.75rem;
+    padding: 0 1rem;
+    border-radius: 6px;
+    border: 1px solid var(--rule-strong);
+    background: var(--surface);
+    color: var(--ink);
+    cursor: pointer;
+  }
+  .choice input {
+    position: absolute;
+    inset: 0;
+    width: 100%;
+    height: 100%;
+    margin: 0;
+    opacity: 0;
+    cursor: pointer;
+  }
+  .choice:has(input:checked) {
+    background: var(--ink);
+    border-color: var(--ink);
+    color: var(--ink-on-light);
+    font-weight: 600;
+  }
+  .choice:has(input:checked)::before {
+    content: "\2713";
+  }
+  .choice:has(input:focus-visible) {
+    outline: 3px solid var(--ink);
+    outline-offset: 2px;
+  }
+  .choice:has(input:disabled) {
+    opacity: 0.5;
+    cursor: not-allowed;
+  }
+  .btn-danger {
+    border-color: var(--danger);
+    color: var(--danger);
+  }
+  .btn-danger:hover {
+    background: var(--danger);
+    border-color: var(--danger);
+    color: var(--ink-on-light);
+  }
+  .field {
+    min-height: 2.75rem;
+    width: 100%;
+    padding: 0.4rem 0.75rem;
+    border-radius: 6px;
+    border: 1px solid var(--rule-strong);
+    background: var(--surface);
+    color: var(--ink);
+  }
+}
