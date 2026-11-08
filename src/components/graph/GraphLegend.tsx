@@ -3,9 +3,9 @@
 // The map key: a small, faded box in the bottom-left corner of the map. It brightens on hover or
 // focus, and can be folded away. Open by default on large screens; folded where it would cover the map.
 import { useState, useSyncExternalStore } from 'react';
-import { DOMAIN_PALETTE, allDomains, courseColors } from '@/lib/graph/layout';
+import { PALETTES, allDomains, courseColors } from '@/lib/graph/layout';
 import { toneFor } from '@/lib/graph/tone'; // [settings]
-import { useResolvedTheme } from '@/lib/useSettings';
+import { useResolvedTheme, useSettings } from '@/lib/useSettings';
 import type { World } from '@/types';
 
 // [settings] Follow the theme: these were fixed light-on-dark colours.
@@ -27,7 +27,8 @@ function subscribeRoomy(cb: () => void) {
 
 export default function GraphLegend({ world }: { world: World }) {
   const domains = allDomains(world);
-  const shades = courseColors(world);
+  const palette = PALETTES[useSettings().settings.colourVision];
+  const shades = courseColors(world, palette);
   const light = useResolvedTheme() === 'light';
   // Open by default where there is room; folded on small screens. Once you toggle it, your choice wins.
   const roomy = useSyncExternalStore(subscribeRoomy, () => window.matchMedia(ROOMY).matches, () => false);
@@ -52,7 +53,7 @@ export default function GraphLegend({ world }: { world: World }) {
             return (
               <li key={d} className="pop-item" style={item(i)}>
                 <span className="flex items-center gap-2">
-                  <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: toneFor(DOMAIN_PALETTE[i % DOMAIN_PALETTE.length], light) }} />
+                  <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: toneFor(palette[i % palette.length], light) }} />
                   {d}
                 </span>
                 {/* Two or more courses in one department: each gets its own shade, named by course code. */}

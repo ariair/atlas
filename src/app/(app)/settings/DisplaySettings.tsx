@@ -28,6 +28,17 @@ export default function DisplaySettings() {
           { value: 'xlarge', label: 'Extra large' },
         ]}
       />
+      <Choice
+        legend="Colour vision"
+        hint="Swaps the subject colours on the map, map key, deadlines and study pages. Course codes are always shown too."
+        value={settings.colourVision}
+        onChange={(colourVision) => update({ colourVision })}
+        options={[
+          { value: 'default', label: 'Standard' },
+          { value: 'red-green', label: 'Red-green (protan, deutan)' },
+          { value: 'blue-yellow', label: 'Blue-yellow (tritan)' },
+        ]}
+      />
       <Switch
         label="Atkinson Hyperlegible font"
         hint="Designed to be easy to read, including for people with low vision or dyslexia."
