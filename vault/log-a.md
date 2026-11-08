@@ -43,3 +43,10 @@
 
 ## Sync point (Person A)
 - PR #10 merged into main (nav, landing, map, palette, detail card, Auth0 links folded into the nav). Next: Person B's 3A work (search, filters, Outline) will need a merge of main into b/ingest; expect conflicts in GraphCanvas.tsx and WorldView.tsx.
+
+## 2026-11-08: Upload, deadlines and settings restyle (Person A, in Person B's folders at the user's request)
+- Upload: themed cards and fields, light primary "Read my document" button (btn-primary), review tables in matching cards with wider title/name fields.
+- Deadlines: filter bar (search, course, type, priority, due window, sort, hide past), timeline and list views, "Export N to calendar" makes the .ics in the browser from the filtered set (the old /api/deadlines.ics route is unchanged but unused by the page). Course dots always sit next to the course code.
+- Priority has no field in the data; `src/lib/priority.ts` reads it from grade weight (20%+ high, 10%+ medium) and is shared with the map's detail card.
+- Settings: side tabs (hash in the URL, arrow keys), drop-downs for 3+ options, toggle switches for on/off including per-subject visibility. Settings storage unchanged.
+- Person B please note: edits are in app/(app)/upload, app/(app)/deadlines and app/(app)/settings; globals.css gained the `.rise` animation class.
