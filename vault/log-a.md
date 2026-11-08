@@ -65,3 +65,10 @@
 - Study is now three steps: choose a class, choose topics from it, then pick prerequisite and associated topics (`relatedTopics` in src/lib/tutor/related.ts, tested; accepted links only, same rule as the backend). Ticked extras are sent as selected topics; the backend still adds unticked prerequisites as background. `?nodes=` links jump to step 3.
 - Reset button (top right of the step bar) with an "are you sure" box; disabled until something is chosen.
 - PDFs: "Download PDF" (guide), "Download test (PDF)" and "Answer key (PDF)" open the print dialog showing only that sheet (printSheet.ts, PrintSheets.tsx, print rules at the end of globals.css). Save as PDF in the dialog. A direct one-click download would need a PDF library.
+
+## 2026-11-08: Map stability, department drop-down, dismiss AI links, edit deadlines (Person A, partly in Person B's folders)
+- Map layout is now worked out up front by `settleLayout` (same result every time; test in settle.test.ts) and only the drift runs live. After the first settle, tiny unlinked groups and lone dots are re-anchored just outside their subject's main cluster (`nestSmallGroups` in forces.ts).
+- Root cause of the map reshaping when you left and came back: Next.js keeps the page you left and re-creates the graph engine on return, and the fresh engine had default forces. The setup effect in GraphCanvas now re-runs every time and `captureHomes` puts dots back on their resting spots.
+- Upload: department is a drop-down of earlier departments plus "Add new department…" (opens a name box).
+- Map detail card: "ai suggested links" with keep / dismiss (PATCH /api/edges/:id; demo mode keeps the change on the page only).
+- Deadlines: Edit button on every deadline (timeline and list). New `PATCH /api/deadlines/:id`, `updateDeadline` in db/queries.ts, `lib/deadlinePatch.ts` (tested).
