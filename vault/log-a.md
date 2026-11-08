@@ -50,3 +50,9 @@
 - Priority has no field in the data; `src/lib/priority.ts` reads it from grade weight (20%+ high, 10%+ medium) and is shared with the map's detail card.
 - Settings: side tabs (hash in the URL, arrow keys), drop-downs for 3+ options, toggle switches for on/off including per-subject visibility. Settings storage unchanged.
 - Person B please note: edits are in app/(app)/upload, app/(app)/deadlines and app/(app)/settings; globals.css gained the `.rise` animation class.
+
+## 2026-11-08: Course shades, map key, upload review (Person A)
+- Courses in one department get different shades of its colour (`courseColors` in layout.ts: first course keeps the base, others lighter or darker, never near white because white means bridge). The map key lists each course with its shade and code. Deadlines page uses the same shades.
+- Map key: scrolls and shrinks on small windows (single column under 760px), has a divider between subjects/courses and the shape key, and bridge now sits with the shapes.
+- Upload: the button says "Read"; the topics table has "Add a row" (blank row to fill in name, type and summary; saving is blocked for blank or repeated names). Helpers `addBlankNode` and `nodeProblem` in src/lib/ingest/editDraft.ts, tested.
+- Main now has Person B's search/filter PR (#11); merge main next.

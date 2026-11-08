@@ -226,6 +226,38 @@ a {
   }
 }
 
+/* The key scrolls when the screen is too short for it, with a thin bar that stays out of the way. */
+.map-key-panel {
+  scrollbar-width: thin;
+  scrollbar-color: var(--rule-strong) transparent;
+  max-height: min(26rem, calc(100dvh - 16rem));
+}
+/* A thin divider between your own things (subjects and courses) and the general shape key. */
+.map-key-shapes {
+  border-left: 1px solid var(--rule);
+  padding-left: 1.25rem;
+}
+
+/* On a small window the key shrinks to a narrow single column and scrolls, so it never hides the map. */
+@media (max-width: 760px), (max-height: 760px) {
+  .map-key-panel {
+    grid-template-columns: 1fr;
+    max-width: min(14rem, 62vw);
+    max-height: min(14rem, 34dvh);
+    padding: 0.625rem 0.75rem;
+    font-size: 1rem;
+    line-height: 1.35;
+  }
+  /* One column: the divider runs across instead of down. */
+  .map-key-shapes {
+    border-left: 0;
+    padding-left: 0;
+    border-top: 1px solid var(--rule);
+    margin-top: 0.375rem;
+    padding-top: 0.5rem;
+  }
+}
+
 /* The map fades in once its data arrives, instead of popping. */
 .map-loading {
   animation: tip-swap 300ms var(--ease-out);

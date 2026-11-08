@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getDemoWorld } from '@/fixtures/demoWorld';
 import type { GraphEdge, GraphNode } from '@/types';
 import {
+  courseColors,
   ANCHOR_STRENGTH,
   ANCHOR_STRETCH,
   BRIDGE_STRENGTH,
@@ -180,5 +181,24 @@ describe('fixture layout', () => {
       // Not sitting in the middle of either island.
       for (const d of toAnchors) expect(d).toBeGreaterThan(gap * 0.15);
     }
+  });
+});
+
+describe('courseColors', () => {
+  const course = (id: string, code: string, domain: string, year: 1 | 2 | 3 | 4 = 1) => ({ id, code, title: code, domain, year, term: 'Fall' });
+
+  it('gives courses in one department different shades of its colour', () => {
+    const colors = courseColors({ courses: [course('a', 'CSCI 201', 'Computer Science'), course('b', 'CSCI 301', 'Computer Science', 3)], nodes: [] });
+    expect(colors.get('a')).not.toBe(colors.get('b'));
+    expect(colors.get('a')).toBe(DOMAIN_PALETTE[0]); // the first course keeps the department colour
+  });
+
+  it('keeps a lone course at its department colour, and does not depend on input order', () => {
+    const solo = courseColors({ courses: [course('m', 'MATH 210', 'Mathematics')], nodes: [] });
+    expect(solo.get('m')).toBe(DOMAIN_PALETTE[0]);
+    const a = courseColors({ courses: [course('x', 'BIOL 101', 'Biology'), course('y', 'BIOL 201', 'Biology', 2)], nodes: [] });
+    const b = courseColors({ courses: [course('y', 'BIOL 201', 'Biology', 2), course('x', 'BIOL 101', 'Biology')], nodes: [] });
+    expect(b.get('x')).toBe(a.get('x'));
+    expect(b.get('y')).toBe(a.get('y'));
   });
 });
