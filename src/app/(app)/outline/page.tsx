@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import OutlineScreen from './OutlineScreen';
 
-export const metadata: Metadata = { title: 'Outline' };
 
 export default function OutlinePage() {
   return (
