@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import StudyScreen from './StudyScreen';
 
-export const metadata: Metadata = { title: 'Study' };
 
 // TEMPLATE (Person B): plain, working screens for the AI tutor. Person A restyles them.
 // Data: GET /api/world, then POST /api/study, /api/quiz, /api/grade (see src/lib/tutor/schemas.ts).
