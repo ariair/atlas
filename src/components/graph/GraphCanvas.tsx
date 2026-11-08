@@ -127,8 +127,8 @@ function Icon({ d }: { d: string }) {
 
 // [search] visibleIds: draw only these items (null = all). highlightId: the searched item. showSuggested: from the filters.
 export default function GraphCanvas({
-  world, visibleIds = null, highlightId = null, showSuggested = true,
-}: { world: World; visibleIds?: Set<string> | null; highlightId?: string | null; showSuggested?: boolean }) {
+  world, visibleIds = null, highlightId = null, showSuggested = true, onWorldChanged,
+}: { world: World; visibleIds?: Set<string> | null; highlightId?: string | null; showSuggested?: boolean; onWorldChanged?: () => Promise<void> }) {
   const fgRef = useRef<FGMethods | undefined>(undefined);
   const boxRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
@@ -217,6 +217,27 @@ export default function GraphCanvas({
       setEdgeNote(`We could not update that link. ${err instanceof Error ? err.message : ''}`.trim());
     }
   }, []);
+
+  // The student adds detail about one item; the server saves it, replaces that item's AI suggestions and looks again,
+  // then the map reloads so the new suggestions show up in the card (POST /api/nodes/:id/relink).
+  const relinkItem = useCallback(
+    async (id: string, text: string): Promise<{ ok: boolean; message: string }> => {
+      try {
+        const res = await fetch(`/api/nodes/${encodeURIComponent(id)}/relink`, { method: 'POST', headers: { 'content-type': 'application/json' }, body: JSON.stringify({ note: text }) });
+        const data = await res.json().catch(() => null);
+        if (!res.ok) throw new Error(data?.error ?? `The server answered ${res.status}.`);
+        if (data?.demo) return { ok: true, message: 'Demo mode: nothing is saved or looked up. Log in to try it on your own map.' };
+        await onWorldChanged?.();
+        return {
+          ok: true,
+          message: data.added > 0 ? `Atlas found ${data.added} possible ${data.added === 1 ? 'link' : 'links'}. Check them under "ai suggested links".` : 'Atlas did not find links yet. More detail helps.',
+        };
+      } catch (err) {
+        return { ok: false, message: `We could not do that. ${err instanceof Error ? err.message : ''}`.trim() };
+      }
+    },
+    [onWorldChanged],
+  );
 
   // How many links touch each dot: better-connected dots are drawn a little larger.
   const degree = useMemo(() => {
@@ -594,7 +615,7 @@ export default function GraphCanvas({
           </div>
         )}
       </div>
-      <NodeDetail world={detailWorld} nodeId={selectedId} onSelect={setSelectedId} onClose={() => setSelectedId(null)} onDecide={decideEdge} note={edgeNote} />
+      <NodeDetail world={detailWorld} nodeId={selectedId} onSelect={setSelectedId} onClose={() => setSelectedId(null)} onDecide={decideEdge} onRelink={relinkItem} note={edgeNote} />
       {/* Screen readers hear the hovered name, and the map's status. */}
       <p aria-live="polite" className="sr-only">
         {tip ? `${tip.label}. ${tip.meta}.` : status}

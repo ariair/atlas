@@ -1,5 +1,5 @@
 import { describe, it, expect } from 'vitest';
-import { buildLinkInput, buildSuggestedEdges, DUPLICATE_LABEL, type AiLinks } from './link';
+import { buildLinkInput, buildSuggestedEdges, DUPLICATE_LABEL, LINK_SYSTEM_PROMPT, type AiLinks } from './link';
 import { mergeNodeFields, rewriteDeadlineNodeIds, rewriteEdgesForMerge } from '../merge';
 import type { GraphEdge, GraphNode } from '../../types';
 
@@ -66,5 +66,39 @@ describe('merging nodes', () => {
   });
   it('rewrites deadline node ids without duplicates', () => {
     expect(rewriteDeadlineNodeIds(['gone', 'keep', 'z'], 'keep', 'gone')).toEqual(['keep', 'z']);
+  });
+});
+
+describe('quizzes and exams in linking', () => {
+  it('lists the kind and description of a quiz, and leaves concepts as they were', () => {
+    const text = buildLinkInput(
+      [{ id: 'q0', label: 'Quiz 0', course: 'CS 213', domain: 'CS', kind: 'assignment', summary: 'Covers  prerequisite\nmaterial from CS 110.' }],
+      [{ id: 'o1', label: 'Pointers', course: 'CS 110', domain: 'CS', kind: 'concept', summary: 'Addresses in memory' }],
+    );
+    expect(text).toContain('q0 | Quiz 0 | CS 213 | CS | assignment | Covers prerequisite material from CS 110.');
+    expect(text).toContain('o1 | Pointers | CS 110 | CS | Addresses in memory');
+  });
+
+  it('turns a prerequisite that points out of a quiz around, and never links two quizzes', () => {
+    const quiz = new Set(['q0', 'q1']);
+    const out = buildSuggestedEdges(
+      {
+        links: [
+          { from: 'q0', to: 'o1', type: 'prerequisite', label: 'tested', confidence: 0.9 },
+          { from: 'q0', to: 'q1', type: 'related', label: 'two quizzes', confidence: 0.9 },
+        ],
+        duplicates: [],
+      },
+      new Set(['q0', 'q1']),
+      new Set(['o1', 'q1']),
+      new Set(),
+      quiz,
+    );
+    expect(out.map((e) => `${e.from}>${e.to}`)).toEqual(['o1>q0']);
+  });
+
+  it('tells the model how to treat quizzes and vague descriptions', () => {
+    expect(LINK_SYSTEM_PROMPT).toContain('assignment or exam');
+    expect(LINK_SYSTEM_PROMPT).toContain('too vague');
   });
 });

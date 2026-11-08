@@ -50,6 +50,12 @@ export default function WorldView() {
     setAttempt((a) => a + 1);
   }, []);
 
+  // Fetch the world again without going back to the loading screen (after the student tells Atlas more about an item).
+  const reload = useCallback(async () => {
+    const next = await fetchWorld();
+    if (next.kind === 'ready') setState(next);
+  }, []);
+
   // No page title: the map simply fills the screen. Loading and errors sit in its centre.
   if (state.kind === 'loading') {
     return (
@@ -81,11 +87,11 @@ export default function WorldView() {
       </div>
     );
   }
-  return <ReadyWorld world={state.world} />;
+  return <ReadyWorld world={state.world} onReload={reload} />;
 }
 
 // [search] The map with its Map/Outline toggle and the search and filter panel. One search state drives both views.
-function ReadyWorld({ world }: { world: World }) {
+function ReadyWorld({ world, onReload }: { world: World; onReload: () => Promise<void> }) {
   const view = useGraphView(world);
   const [mode, setMode] = useState<'map' | 'outline'>('map');
   const [panelOpen, setPanelOpen] = useState(false);
@@ -104,7 +110,7 @@ function ReadyWorld({ world }: { world: World }) {
       </button>
 
       <div className="absolute inset-0" inert={mode === 'outline'} aria-hidden={mode === 'outline'}>
-        <GraphCanvas world={world} visibleIds={view.visibleIds} highlightId={view.activeId} showSuggested={view.filters.showSuggested} />
+        <GraphCanvas world={world} visibleIds={view.visibleIds} highlightId={view.activeId} showSuggested={view.filters.showSuggested} onWorldChanged={onReload} />
         <GraphLegend world={world} />
       </div>
 

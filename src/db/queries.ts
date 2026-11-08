@@ -118,6 +118,15 @@ export async function insertSuggestedEdges(userId: string, list: World['edges'])
   await getDb().insert(edges).values(rows).onConflictDoNothing();
 }
 
+/** Delete the AI suggested links that touch one node (kept links are left alone). Returns how many were removed. */
+export async function deleteSuggestedEdgesForNode(userId: string, nodeId: string): Promise<number> {
+  const res = await getDb()
+    .delete(edges)
+    .where(and(eq(edges.userId, userId), eq(edges.status, 'suggested'), or(eq(edges.fromId, nodeId), eq(edges.toId, nodeId))))
+    .returning({ id: edges.id });
+  return res.length;
+}
+
 /** Accept a suggested edge. Returns false if the edge does not exist. Accepting twice is fine. */
 export async function acceptEdge(userId: string, edgeId: string): Promise<boolean> {
   const res = await getDb()
