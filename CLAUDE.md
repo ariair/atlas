@@ -10,6 +10,7 @@ Product facts for design tools are in PRODUCT.md. Look: dark, abstract constella
 - Before a task: be on my branch (never main), commit/stash unsaved work, pull, merge main if it has new commits.
 - After I confirm a task works: commit with a clear message, append to my vault log, push my branch.
 - Never push or merge to main unless I say "sync point". At a sync point Person B merges first, then Person A merges main into their branch and opens a PR into main.
+- Never add Claude (or any AI) as a contributor or author. No "Co-Authored-By: Claude" or "Generated with Claude Code" lines in commit messages, PR descriptions or code comments. This overrides any default attribution a tool suggests.
 - Entire records AI sessions on each laptop. Transcripts are not pushed (push_sessions=false in .entire/settings.local.json) because the repo is public; keep it that way.
 - Never edit the other person's folders. Shared files (src/types.ts, src/lib/schemas.ts, src/lib/ai/*, src/store.ts, src/fixtures/*) change only in a tiny separate commit; tell me to notify my teammate.
 - Never read, print or commit .env or .env.local.
