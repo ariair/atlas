@@ -78,3 +78,30 @@ Schemas: src/lib/nodePatch.ts. DB functions: src/db/queries.ts. Tested against a
 - Fixes found while re-scanning the merged result: A's skip link showed over the demo bar (now hidden until focused), and the map key was too faint in light theme (full opacity in light).
 - A replaced the due-soon banner with the alerts bell (DueBanner.tsx is unused). The PRD (section 5C) still describes a dismissible role=alert welcome banner: Person A and Person B to confirm.
 - Re-ran axe on all 5 pages in dark and light, default and all accessibility options: no violations. 170 tests pass.
+
+## Brand files (for Auth0 login branding)
+- public/brand/: atlas-mark.svg/.png (transparent, for dark pages), atlas-icon.svg/.png (on a dark rounded square), atlas-icon-64.png (favicon size). Same shapes and colours as src/components/ui/AtlasMark.tsx.
+- src/proxy.ts matcher skips brand/ so the files stay public even while SITE_ACCESS_KEY is set (Auth0 must be able to load them).
+- Brand colours for Auth0 Universal Login: page background #1b1b1b, widget background #252525, text #f4f4f4, secondary text #cfcfcf, borders #7d7d7d, primary button #f4f4f4 with label #1b1b1b.
+
+## Search, Focus, filters and the Outline (Person B built; Person A wires the map)
+Built because they are PRD must-haves (3, 4) and Person A was busy with nav/landing. Everything is new files, tested, and has no changes to GraphCanvas.
+- Logic (pure, tested): src/lib/graph/search.ts (Fuse.js fuzzy search, tolerates typos), focus.ts (Focus: direct / 2 hops / whole prerequisite chain), filters.ts (year, subject, course, kind, suggested links; AND across groups, OR within), src/lib/outline.ts (tree builder), src/lib/treeNav.ts (keyboard rules for the tree).
+- Hook: `useGraphView(world)` in src/lib/graph/useGraphView.ts returns query, results, activeId, focus/depth, filters, and `visibleIds` (a Set of item ids to SHOW, or null = show everything).
+- UI: src/components/outline/SearchFilterBar.tsx (takes the hook's result: `<SearchFilterBar view={view} />`) and OutlineView.tsx (role="tree", full keyboard use). Page: /outline (src/app/(app)/outline). Nav link added with the mark [outline].
+
+### For Person A: put search and filters on the map (about 20 minutes)
+1. In WorldView: `const view = useGraphView(world)`; render `<SearchFilterBar view={view} />` over or beside the map (or inside a panel).
+2. Pass `view.visibleIds` and `view.activeId` to GraphCanvas. Draw a node only if `!visibleIds || visibleIds.has(node.id)` (combine with the settings' hidden subjects: nodeVisibility already exists). Draw a link only if both ends are visible (and hide suggested links if `view.filters.showSuggested` is false).
+3. Highlight `view.activeId`: ring it and, if you like, zoom to it. Search must NOT dim or hide the rest of the map unless Focus is on (vault/decisions.md, search behaviour).
+4. Island positions must not change when filtering: keep computing anchors from ALL subjects (already how layout.ts works). Only change what is drawn.
+5. Add a "Skip to Outline" link at the top of the map page (PRD) and a map/outline toggle. The Outline page is /outline.
+Tested: 208 unit tests; keyboard walk-through (arrows, open/close, jump to linked item); axe finds no violations on /outline in dark/light x default/all accessibility options.
+
+## UPDATE: search, filters, Focus and Outline are now ON the map page (Person B did the wiring, at the user's request)
+Replaces the "For Person A: put search and filters on the map" steps above: they are done. The Outline is no longer a nav link; it is a button on the map page.
+- Map page (src/components/graph/WorldView.tsx, new `ReadyWorld`): a **map | outline** toggle, a **search & filters** button that opens a panel (search, Focus switch with depth, filters), a "focused on ... N of M" label, and a "skip to outline" button for keyboard users (first Tab stop). One search state (`useGraphView`) drives both views. Outline mode shows the tree over the map (the map is inert while hidden).
+- Map canvas (GraphCanvas.tsx, marked [search]): new optional props `visibleIds`, `highlightId`, `showSuggested`. It draws only the visible items and the links between them, rings and names the searched item, opens A's detail card for it and moves the camera to it. Island positions are untouched (anchors still come from all subjects).
+- /outline still exists as a stand-alone page (same panel). The nav link was removed.
+- Tested: 209 unit tests; real browser run (search with a typo, Focus 8 / 24 of 78, filters, Outline toggle moves focus to the Outline heading); axe: no violations on the map page in map mode and outline mode, dark/light x default/all accessibility options.
+- Note: after pulling these changes, restart `npm run dev` if the map page sticks on "drawing your map" (stale dev compile).

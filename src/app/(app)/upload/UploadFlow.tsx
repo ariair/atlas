@@ -4,10 +4,14 @@ import { useEffect, useRef, useState } from 'react';
 import type { ExtractionDraft } from '@/types';
 import { guessCourse, guessYear } from '@/lib/ingest/guess';
 import ReviewScreen from './ReviewScreen';
-import { button, focusRing } from './styles';
+import { button, primaryButton } from './styles';
 
 type Step = 'form' | 'loading' | 'review' | 'done';
-const field = 'mt-1 block min-h-11 w-full rounded-md border border-zinc-400 bg-white px-3 py-2 text-lg text-black dark:bg-zinc-900 dark:text-white';
+const field = 'mt-1.5 block min-h-11 w-full rounded-lg border border-rule-strong bg-ground/60 px-3 py-2 text-lg normal-case text-ink placeholder:text-ink-muted/60 transition-colors duration-150 hover:border-ink-muted focus:border-ink-muted';
+const card = 'rise rounded-2xl border border-white/10 bg-surface/60 p-5 backdrop-blur-md sm:p-6';
+const legend = 'mb-3 flex items-center gap-3 text-xl font-medium lowercase tracking-[-0.01em]';
+const badge = (n: number) => <span aria-hidden="true" className="grid size-7 place-items-center rounded-full border border-rule-strong text-base text-ink-muted">{n}</span>;
+const delay = (i: number) => ({ '--i': i }) as React.CSSProperties;
 
 export default function UploadFlow() {
   const [step, setStep] = useState<Step>('form');
@@ -120,18 +124,19 @@ export default function UploadFlow() {
   const status = step === 'loading' ? 'Reading your document. This usually takes 10 to 30 seconds.' : step === 'review' ? 'Review ready. Check the details below.' : step === 'done' ? savedMessage : '';
 
   return (
-    <div className="mt-6">
-      <div role="status" aria-live="polite" className={status ? 'mb-4 rounded-md border border-zinc-400 p-3' : 'sr-only'}>
+    <div className="mt-8">
+      <div role="status" aria-live="polite" className={status ? 'mb-4 max-w-3xl rounded-xl border border-white/10 bg-surface/60 p-4 backdrop-blur-md' : 'sr-only'}>
         {status}
       </div>
-      <div ref={errorRef} tabIndex={-1} role="alert" className={error ? `mb-4 rounded-md border-2 border-red-700 p-3 ${focusRing}` : 'sr-only'}>
+      <div ref={errorRef} tabIndex={-1} role="alert" className={error ? 'mb-4 max-w-3xl rounded-xl border-2 border-[#D67A48] bg-[#D67A48]/10 p-4' : 'sr-only'}>
         {error && <><strong>Problem: </strong>{error}</>}
       </div>
 
       {(step === 'form' || step === 'loading') && (
-        <form onSubmit={submit} className="space-y-6" aria-busy={step === 'loading'}>
-          <fieldset className="space-y-3">
-            <legend className="text-xl font-semibold">1. Your document</legend>
+        <form onSubmit={submit} className="max-w-3xl space-y-5" aria-busy={step === 'loading'}>
+          <fieldset className={`${card} space-y-4`} style={delay(2)}>
+            <legend className="sr-only">1. Your document</legend>
+            <p aria-hidden="true" className={legend}>{badge(1)}your document</p>
             {samples.length > 0 && (
               <div>
                 <label htmlFor="sample" className="font-medium">Use a sample syllabus (demo mode)</label>
@@ -141,29 +146,29 @@ export default function UploadFlow() {
                 </select>
               </div>
             )}
-            <div className="flex flex-wrap gap-6">
-              <label className="flex min-h-11 items-center gap-2">
-                <input type="radio" name="mode" checked={mode === 'text'} onChange={() => setMode('text')} className="size-5" /> Paste text
-              </label>
-              <label className="flex min-h-11 items-center gap-2">
-                <input type="radio" name="mode" checked={mode === 'pdf'} onChange={() => setMode('pdf')} className="size-5" /> Upload a PDF (up to 20 pages)
-              </label>
+            <div className="flex flex-wrap gap-2">
+              {([['text', 'Paste text'], ['pdf', 'Upload a PDF (up to 20 pages)']] as const).map(([m, label]) => (
+                <label key={m} className={`flex min-h-11 cursor-pointer items-center gap-2.5 rounded-full border px-4 transition-colors duration-150 has-[:focus-visible]:outline has-[:focus-visible]:outline-3 has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink ${mode === m ? 'border-ink-muted bg-white/10 text-ink' : 'border-rule text-ink-muted hover:border-rule-strong'}`}>
+                  <input type="radio" name="mode" checked={mode === m} onChange={() => setMode(m)} className="size-4 accent-[#CFCFCF]" /> {label}
+                </label>
+              ))}
             </div>
             {mode === 'text' ? (
               <div>
                 <label htmlFor="text" className="font-medium">Syllabus text</label>
-                <textarea id="text" value={text} onChange={(e) => setText(e.target.value)} rows={10} className={`${field} font-mono`} placeholder="Paste the syllabus here" />
+                <textarea id="text" value={text} onChange={(e) => setText(e.target.value)} rows={10} className={`${field} resize-y font-mono`} placeholder="Paste the syllabus here" />
               </div>
             ) : (
               <div>
                 <label htmlFor="file" className="font-medium">PDF file</label>
-                <input id="file" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={`${field} file:mr-4`} />
+                <input id="file" type="file" accept="application/pdf" onChange={(e) => setFile(e.target.files?.[0] ?? null)} className={`${field} file:mr-4 file:min-h-9 file:cursor-pointer file:rounded-full file:border-0 file:bg-white/10 file:px-4 file:text-ink`} />
               </div>
             )}
           </fieldset>
 
-          <fieldset className="grid gap-4 sm:grid-cols-2">
-            <legend className="mb-2 text-xl font-semibold">2. Confirm the course</legend>
+          <fieldset className={`${card} grid gap-4 sm:grid-cols-2`} style={delay(3)}>
+            <legend className="sr-only">2. Confirm the course</legend>
+            <p aria-hidden="true" className={`${legend} sm:col-span-2`}>{badge(2)}confirm the course</p>
             <div>
               <label htmlFor="code" className="font-medium">Course code</label>
               <input id="code" required value={code} onChange={(e) => { touched.current.code = true; setCode(e.target.value); }} className={field} placeholder="CSCI 220" />
@@ -189,9 +194,11 @@ export default function UploadFlow() {
             </div>
           </fieldset>
 
-          <button type="submit" disabled={step === 'loading'} className={`${button} bg-blue-700 text-white disabled:opacity-60`}>
-            {step === 'loading' ? 'Reading…' : 'Read my document'}
-          </button>
+          <div className="rise" style={delay(4)}>
+            <button type="submit" disabled={step === 'loading'} className={`${primaryButton} min-h-12 rounded-full px-7 text-[1.125rem]`}>
+              {step === 'loading' ? 'Reading…' : 'Read my document'}
+            </button>
+          </div>
         </form>
       )}
 
@@ -200,12 +207,12 @@ export default function UploadFlow() {
       )}
 
       {step === 'done' && (
-        <div className="space-y-4">
-          <p className="text-xl font-semibold">{savedMessage}</p>
+        <div className={`${card} max-w-3xl space-y-4`}>
+          <p className="text-xl font-medium">{savedMessage}</p>
           <div className="flex flex-wrap gap-4">
-            <a href="/world" className={`${button} inline-flex items-center bg-blue-700 text-white`}>See it on the map</a>
-            <a href="/deadlines" className={`${button} inline-flex items-center border border-zinc-500`}>See deadlines</a>
-            <button type="button" className={`${button} border border-zinc-500`} onClick={() => { setStep('form'); setText(''); setFile(null); setDraft(null); touched.current = { code: false, title: false, term: false, year: false }; setCode(''); setTitle(''); setTerm(''); }}>
+            <a href="/world" className={`${primaryButton} rounded-full`}>See it on the map</a>
+            <a href="/deadlines" className={`${button} rounded-full`}>See deadlines</a>
+            <button type="button" className={`${button} rounded-full`} onClick={() => { setStep('form'); setText(''); setFile(null); setDraft(null); touched.current = { code: false, title: false, term: false, year: false }; setCode(''); setTitle(''); setTerm(''); }}>
               Add another course
             </button>
           </div>

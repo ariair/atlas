@@ -41,5 +41,6 @@ export async function proxy(request: NextRequest) {
   return auth0 ? auth0.middleware(request) : NextResponse.next();
 }
 
-// Everything except Next's own static files (those hold no data and the closed page doesn't use them).
-export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt).*)'] };
+// Everything except Next's own static files and the public logo (those hold no data).
+// brand/ holds the public logo files, which the login provider must be able to load.
+export const config = { matcher: ['/((?!_next/static|_next/image|favicon.ico|sitemap.xml|robots.txt|brand/).*)'] };

@@ -1,7 +1,18 @@
 'use client';
 
+import { useId } from 'react';
 import { useSettings } from '@/lib/useSettings';
-import { Choice, Section, Switch } from './controls';
+import { Choice, Row, Section, Switch, Toggle } from './controls';
+
+function SubjectRow({ name, shown, onChange }: { name: string; shown: boolean; onChange: (v: boolean) => void }) {
+  const id = useId();
+  return (
+    <li className="flex items-center justify-between gap-4 py-1">
+      <label htmlFor={id} className="cursor-pointer">{name}</label>
+      <Toggle id={id} checked={shown} onChange={onChange} />
+    </li>
+  );
+}
 
 export default function MapSettings({ subjects }: { subjects: string[] }) {
   const { settings, update } = useSettings();
@@ -14,10 +25,10 @@ export default function MapSettings({ subjects }: { subjects: string[] }) {
   };
 
   return (
-    <Section id="map" title="Map" intro="What the map shows. Hiding something here only changes your view; nothing is deleted.">
+    <Section id="map" title="map" intro="What the map shows. Hiding something here only changes your view; nothing is deleted.">
       <Choice
         legend="Item names on the map"
-        hint="By default a name appears when you hover over a dot. You can also show names as you zoom in, or always. “Always” can look crowded until you zoom in."
+        hint="A name appears when you hover over a dot, or you can show names as you zoom in, or always. “Always” can look crowded until you zoom in."
         value={settings.nodeNames}
         onChange={(nodeNames) => update({ nodeNames })}
         options={[
@@ -32,24 +43,17 @@ export default function MapSettings({ subjects }: { subjects: string[] }) {
         checked={settings.showSuggested}
         onChange={(showSuggested) => update({ showSuggested })}
       />
-      <fieldset>
-        <legend className="font-medium">Subjects shown</legend>
-        <p className="mt-0.5 max-w-prose text-ink-muted">Untick a subject to hide its island and links from the map.</p>
+      <Row label="Subjects shown" hint="Switch a subject off to hide its island and links from the map.">
         {subjects.length === 0 ? (
-          <p className="mt-2 text-ink-muted">Your subjects will appear here once you have added a course.</p>
+          <p className="text-ink-muted">Your subjects will appear here once you have added a course.</p>
         ) : (
-          <ul className="mt-2 flex flex-wrap gap-2">
+          <ul aria-label="Subjects shown" className="min-w-[14rem]">
             {subjects.map((name) => (
-              <li key={name}>
-                <label className="choice">
-                  <input type="checkbox" checked={!hidden.has(name)} onChange={(e) => toggle(name, e.target.checked)} />
-                  {name}
-                </label>
-              </li>
+              <SubjectRow key={name} name={name} shown={!hidden.has(name)} onChange={(show) => toggle(name, show)} />
             ))}
           </ul>
         )}
-      </fieldset>
+      </Row>
     </Section>
   );
 }
