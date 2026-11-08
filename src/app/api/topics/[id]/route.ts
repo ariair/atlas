@@ -1,7 +1,7 @@
 import { deleteTopic, updateTopic } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { TopicPatchSchema } from '@/lib/nodePatch';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 const demoBlocked = () => Response.json({ error: 'Topic changes are not saved in demo mode.' }, { status: 403 });
 
@@ -18,6 +18,8 @@ export async function PATCH(request: Request, ctx: RouteContext<'/api/topics/[id
     if (result.status === 'bad_course') return Response.json({ error: 'That course does not exist.' }, { status: 400 });
     return Response.json({ ok: true, topic: result.topic });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[topics] update failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not update that topic. Try again.' }, { status: 500 });
   }
@@ -32,6 +34,8 @@ export async function DELETE(request: Request, ctx: RouteContext<'/api/topics/[i
       ? Response.json({ ok: true })
       : Response.json({ error: 'That topic was not found.' }, { status: 404 });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[topics] delete failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not delete that topic. Try again.' }, { status: 500 });
   }

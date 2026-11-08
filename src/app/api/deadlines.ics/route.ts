@@ -1,3 +1,4 @@
+import { authFailure } from '@/lib/user';
 import { connection } from 'next/server';
 import { loadWorld } from '@/db/loadWorld';
 import { generateIcs } from '@/lib/ics';
@@ -15,6 +16,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[deadlines.ics] failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'Could not build the calendar file.' }, { status: 500 });
   }

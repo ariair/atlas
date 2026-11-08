@@ -4,6 +4,7 @@
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import AtlasMark from './AtlasMark';
+import AuthLinks from './AuthLinks'; // [auth]
 
 // Study joins this list when its page ships (prompt 4A); linking it now would lead to a 404.
 const LINKS = [
@@ -50,6 +51,7 @@ export default function AppNav() {
             );
           })}
         </ul>
+        <AuthLinks />
       </nav>
     </header>
   );

@@ -1,7 +1,9 @@
 // Demo mode: the Sample University world plus recorded AI responses. Needs no database, no AI and no login.
-// Turned on by env DEMO=1, by ?demo=1 (the badge then remembers it in a cookie), or by the atlas_demo cookie.
+// Turned on by env DEMO=1, by ?demo=1 (the badge then remembers it in a cookie), by the atlas_demo cookie,
+// or, when login is configured, for anyone who is not logged in.
 // Server code that uses AI or the database should check isDemoRequest(request) first.
 import { getDemoWorld } from '../fixtures/demoWorld';
+import { authConfigured, hasSessionCookie } from './authConfig';
 import { RECORDED, type RecordedSample } from '../fixtures/recorded';
 import type { World } from '../types';
 import { buildDraft } from './ingest/buildDraft';
@@ -22,7 +24,9 @@ export function getCookie(request: Request, name: string): string | undefined {
 }
 
 export function isDemoRequest(request: Request): boolean {
-  return process.env.DEMO === '1' || new URL(request.url).searchParams.get('demo') === '1' || getCookie(request, DEMO_COOKIE) === '1';
+  if (process.env.DEMO === '1' || new URL(request.url).searchParams.get('demo') === '1' || getCookie(request, DEMO_COOKIE) === '1') return true;
+  // With login switched on, visitors who are not logged in only ever see the demo. Real data needs an account.
+  return authConfigured() && !hasSessionCookie(request);
 }
 
 /** Samples the visitor has "uploaded" so far in this demo session (kept in a small cookie). */

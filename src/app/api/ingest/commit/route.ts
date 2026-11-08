@@ -1,5 +1,5 @@
 import { ExtractionDraftSchema } from '@/lib/schemas';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 import { appendToWorld, getCourseIds, getWorldForUser } from '@/db/queries';
 import { draftToAdditions } from '@/lib/ingest/commit';
 import { checkDraftLimits } from '@/lib/ingest/limits';
@@ -50,6 +50,8 @@ export async function POST(request: Request) {
     const linking = await linkNewCourse(userId, result.courseId);
     return Response.json({ ok: true, courseId: result.courseId, linking, world: await getWorldForUser(userId) });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     // Two quick confirms of the same course race: the second hits a unique-key error. Report it as a duplicate.
     const e = err as { code?: string; cause?: { code?: string } };
     if ((e?.code ?? e?.cause?.code) === '23505') {

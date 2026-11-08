@@ -1,3 +1,4 @@
+import { authFailure } from '@/lib/user';
 import { connection } from 'next/server';
 import { loadWorld } from '@/db/loadWorld';
 import { makeExportFile } from '@/lib/manage';
@@ -16,6 +17,8 @@ export async function GET(request: Request) {
       },
     });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[export] failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not build your export. Try again.' }, { status: 500 });
   }

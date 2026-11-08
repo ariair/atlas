@@ -1,7 +1,7 @@
 import { renameSubject } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { SubjectRenameSchema } from '@/lib/manage';
-import { getUserId } from '@/lib/user';
+import { authFailure, getUserId } from '@/lib/user';
 
 // POST /api/subjects/rename  { from, to } -> { ok, courses, items }
 // Renames a subject (department). If `to` already exists, the two subjects become one.
@@ -14,6 +14,8 @@ export async function POST(request: Request) {
     if (r.courses === 0 && r.items === 0) return Response.json({ error: 'That subject was not found.' }, { status: 404 });
     return Response.json({ ok: true, ...r });
   } catch (err) {
+    const unauth = authFailure(err);
+    if (unauth) return unauth;
     console.error('[subjects] rename failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not rename that subject. Try again.' }, { status: 500 });
   }

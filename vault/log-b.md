@@ -66,3 +66,9 @@ Schemas: src/lib/nodePatch.ts. DB functions: src/db/queries.ts. Tested against a
 - Edits in PERSON A'S files (small, marked "[settings]"): app/globals.css (appended light theme tokens, text-size/font/spacing/contrast/motion rules, .choice and .btn-danger; nothing above the new block changed), app/layout.tsx (Atkinson font, boot script, SettingsApplier), components/ui/AppNav.tsx (settings link), components/graph/GraphCanvas.tsx (theme-aware colours read from CSS variables, node names, suggested-links switch, hidden subjects, motion off), components/graph/GraphLegend.tsx (theme-aware key), lib/graph/tone.ts (new).
 - Tested: 153+ unit tests, throwaway-user database checks (rename/merge subjects, course edit/delete, item delete, export-import round trip), and axe-core on all 5 pages in 4 combinations (dark/light x default/all accessibility options): no violations.
 - Gotcha: ~/Documents is synced by iCloud Drive, which creates duplicate "... 2" files (seen in .next). Consider moving the project outside iCloud.
+
+## Auth0 login (Person B)
+- Code complete and tested with fake Auth0 settings; real login still needs your Auth0 app and the four env values (see vault/auth0-setup.md).
+- Rule: login on => logged-out visitors are demo-only; a session cookie that is not valid gets a 401 (never data); new accounts start empty; `npm run db:claim` moves the shared demo user's data into your account.
+- Small [auth] edits in Person A's files: components/ui/AppNav.tsx (login links), components/graph/WorldView.tsx (empty-map invitation). New: components/ui/AuthLinks.tsx.
+- Tested: 170 unit tests; a production build with fake Auth0 settings (logged-out visitor, forged cookie, demo guards, DB unchanged).
