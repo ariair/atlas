@@ -238,6 +238,15 @@ export function nodeColors(world: World, palette: string[] = DOMAIN_PALETTE): Ma
   }]));
 }
 
+/** Repaint existing canvas nodes in another palette (in place, so the simulation keeps running untouched). */
+export function recolorNodes(nodes: CanvasNode[], world: World, palette: string[]): void {
+  const c = nodeColors(world, palette);
+  for (const n of nodes) {
+    const k = c.get(n.id);
+    if (k) { n.color = k.color; n.strokeColor = k.strokeColor; }
+  }
+}
+
 export function toGraphData(world: World, palette: string[] = DOMAIN_PALETTE): CanvasGraph {
   const domains = allDomains(world);
   const anchors = computeAnchors(domains);
