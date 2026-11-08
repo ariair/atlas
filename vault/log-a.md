@@ -114,3 +114,7 @@
 
 ## 2026-11-08: Deadlines view switch animated (Person A, in Person B's folder at the user's request)
 - `app/(app)/deadlines/DeadlinesView.tsx`: the timeline | list buttons now use the shared `BubbleToggle` (sliding bubble) instead of plain buttons.
+
+## 2026-11-08: Colour vision setting (Person A; touches B's DeadlinesView.tsx and the shared src/lib/settings.ts)
+- New `colourVision` setting (standard, red-green, blue-yellow) in Settings > appearance. `PALETTES` in lib/graph/layout.ts holds the sets; `courseColors`, `toGraphData` and new `nodeColors` take a palette. GraphCanvas recolours dots in place, so the layout never re-settles. Map key, deadlines and study pages use the chosen set; the landing hero keeps the standard one.
+- The two new sets were picked by simulating protan/deutan/tritan vision and maximising the smallest gap; `palettes.test.ts` keeps every pair at least 15 apart.

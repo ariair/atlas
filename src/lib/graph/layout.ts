@@ -9,6 +9,15 @@ export interface Point {
 // Okabe-Ito colour-blind-safe palette, ordered so the darkest blue (hard to see on a
 // dark background) is used last. Colour is never the only cue: islands also get labels.
 export const DOMAIN_PALETTE = ['#E3A93D', '#78B4DE', '#3DAE8C', '#E8DE7A', '#C98AB0', '#D67A48', '#4A8CC0'];
+
+// Colour-vision options (Settings > appearance). Each set was picked by simulating that kind of colour vision and
+// maximising the smallest gap between any two colours; src/lib/graph/palettes.test.ts keeps it that way.
+export type ColourVision = 'default' | 'red-green' | 'blue-yellow';
+export const PALETTES: Record<ColourVision, string[]> = {
+  default: DOMAIN_PALETTE,
+  'red-green': ['#B0804F', '#699ED3', '#C0EDED', '#97C639', '#6969D3', '#B04F80', '#39C697'],
+  'blue-yellow': ['#C65139', '#39C639', '#697BD3', '#C69739', '#C639C6', '#B1E198', '#E6CCC7'],
+};
 export const NEUTRAL_COLOR = '#9CA3AF';
 
 // Courses in the same department share a hue. To tell them apart each course gets its own shade of it:
@@ -37,11 +46,11 @@ export function courseShade(base: string, index: number): string {
  * A colour per course: its department's colour, shaded when the department has several courses.
  * Courses are ordered by year then code so the shades never depend on input order.
  */
-export function courseColors(world: Pick<World, 'courses' | 'nodes'>): Map<string, string> {
+export function courseColors(world: Pick<World, 'courses' | 'nodes'>, palette: string[] = DOMAIN_PALETTE): Map<string, string> {
   const domains = allDomains(world);
   const out = new Map<string, string>();
   for (const [i, d] of domains.entries()) {
-    const base = DOMAIN_PALETTE[i % DOMAIN_PALETTE.length];
+    const base = palette[i % palette.length];
     const inDomain = world.courses.filter((c) => c.domain === d).sort((a, b) => a.year - b.year || a.code.localeCompare(b.code));
     inDomain.forEach((c, k) => out.set(c.id, inDomain.length > 1 ? courseShade(base, k) : base));
   }
@@ -219,11 +228,21 @@ export function readableTextOn(hex: string): '#0E1116' | '#FFFFFF' {
 }
 
 /** Turn a World into canvas nodes and links. Edges pointing at missing nodes are dropped. */
-export function toGraphData(world: World): CanvasGraph {
+/** Each node's fill and (for bridge nodes) outline colour in the given palette. Positions never depend on colour. */
+export function nodeColors(world: World, palette: string[] = DOMAIN_PALETTE): Map<string, { color: string; strokeColor: string | null }> {
+  const colors = new Map(allDomains(world).map((d, i) => [d, palette[i % palette.length]]));
+  const shades = courseColors(world, palette);
+  return new Map(world.nodes.map((n) => [n.id, {
+    color: shades.get(n.courseIds[0]) ?? colors.get(n.domains[0]) ?? NEUTRAL_COLOR, // this course's shade of its department colour
+    strokeColor: n.domains.length > 1 ? (colors.get(n.domains[1]) ?? null) : null,
+  }]));
+}
+
+export function toGraphData(world: World, palette: string[] = DOMAIN_PALETTE): CanvasGraph {
   const domains = allDomains(world);
   const anchors = computeAnchors(domains);
-  const colors = new Map(domains.map((d, i) => [d, DOMAIN_PALETTE[i % DOMAIN_PALETTE.length]]));
-  const shades = courseColors(world);
+  const colorOf = nodeColors(world, palette);
+  const colors = new Map(domains.map((d, i) => [d, palette[i % palette.length]]));
   const byId = new Map(world.nodes.map((n) => [n.id, n]));
   const edges = world.edges.filter((e) => byId.has(e.from) && byId.has(e.to) && e.from !== e.to);
 
@@ -241,8 +260,8 @@ export function toGraphData(world: World): CanvasGraph {
       anchorX: a.x,
       anchorY: a.y,
       anchorStrength: a.strength,
-      color: shades.get(n.courseIds[0]) ?? colors.get(n.domains[0]) ?? NEUTRAL_COLOR, // this course's shade of its department colour
-      strokeColor: n.domains.length > 1 ? (colors.get(n.domains[1]) ?? null) : null,
+      color: colorOf.get(n.id)!.color,
+      strokeColor: colorOf.get(n.id)!.strokeColor,
       x: a.x + r * Math.cos(angle),
       y: a.y + r * Math.sin(angle),
     };

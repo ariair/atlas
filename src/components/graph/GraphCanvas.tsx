@@ -9,7 +9,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import ForceGraph2D, { type ForceGraphMethods, type LinkObject, type NodeObject } from 'react-force-graph-2d';
 import type { ForceLink } from 'd3-force';
 import type { NodeType, World } from '@/types';
-import { neighborhood, toGraphData, type CanvasLink, type CanvasNode } from '@/lib/graph/layout';
+import { PALETTES, neighborhood, nodeColors, toGraphData, type CanvasLink, type CanvasNode } from '@/lib/graph/layout';
 import NodeDetail from './NodeDetail';
 import { captureHomes, makeDriftForce, settleLayout } from '@/lib/graph/forces';
 // [settings] Display settings (theme, node names, hidden subjects, motion) come from Settings; see src/lib/settings.ts.
@@ -163,6 +163,15 @@ export default function GraphCanvas({
   // depend on frame timing, so revisiting the map or pausing and playing could scatter lone dots and
   // stretch the islands.) After this, the live simulation only sways the dots gently around their resting spots.
   const graph = useMemo(() => settleLayout(toGraphData(world)), [world]);
+  // Colour vision setting: recolour the dots in place (positions never depend on colour, so nothing moves or re-settles).
+  const subjectPalette = PALETTES[settings.colourVision];
+  useMemo(() => {
+    const c = nodeColors(world, subjectPalette);
+    for (const n of graph.nodes) {
+      const k = c.get(n.id);
+      if (k) { n.color = k.color; n.strokeColor = k.strokeColor; }
+    }
+  }, [graph, world, subjectPalette]);
   const graphData = useMemo(() => ({ nodes: graph.nodes, links: graph.links }), [graph]);
   const courseCode = useMemo(() => new Map(world.courses.map((c) => [c.id, c.code])), [world.courses]);
 

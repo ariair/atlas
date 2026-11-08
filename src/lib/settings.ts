@@ -13,6 +13,7 @@ export const SettingsSchema = z.object({
   textSize: field(z.enum(['default', 'large', 'xlarge']), 'default'),
   font: field(z.enum(['default', 'atkinson']), 'default'),
   spacing: field(z.enum(['default', 'relaxed']), 'default'),
+  colourVision: field(z.enum(['default', 'red-green', 'blue-yellow']), 'default'), // subject colour set, read by the map, key and cards
   contrast: field(z.enum(['default', 'high']), 'default'),
   motion: field(z.enum(['system', 'off']), 'system'), // 'off' freezes the map and animations
   nodeNames: field(z.enum(['hover', 'zoom', 'always']), 'hover'),
