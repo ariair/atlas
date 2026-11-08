@@ -21,3 +21,5 @@ The PRD section 5A says a search match highlights itself plus all transitive pre
 - 2026-11-07 (Person B, approved by the user): Auth0 login. While configured, anyone without a session is demo-only; this also settles the "lock down real mode before opening the site" item. Small marked [auth] edits in Person A's AppNav (login links) and WorldView (empty-map invitation).
 
 - 2026-11-07 (Person B, approved by the user): Search, Focus, filters and the Outline view built by Person B as new pure files + /outline; Person A wires search and filters into the map using useGraphView (steps in vault/log-b.md).
+
+- 2026-11-07 (Person B, approved by the user): Search, filters, Focus and an Outline toggle are wired into the map page (small marked [search] edits in GraphCanvas.tsx and WorldView.tsx). Outline is a button on the map page, not a nav link. Person A: please review those two files at the next sync.

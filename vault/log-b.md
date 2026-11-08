@@ -97,3 +97,11 @@ Built because they are PRD must-haves (3, 4) and Person A was busy with nav/land
 4. Island positions must not change when filtering: keep computing anchors from ALL subjects (already how layout.ts works). Only change what is drawn.
 5. Add a "Skip to Outline" link at the top of the map page (PRD) and a map/outline toggle. The Outline page is /outline.
 Tested: 208 unit tests; keyboard walk-through (arrows, open/close, jump to linked item); axe finds no violations on /outline in dark/light x default/all accessibility options.
+
+## UPDATE: search, filters, Focus and Outline are now ON the map page (Person B did the wiring, at the user's request)
+Replaces the "For Person A: put search and filters on the map" steps above: they are done. The Outline is no longer a nav link; it is a button on the map page.
+- Map page (src/components/graph/WorldView.tsx, new `ReadyWorld`): a **map | outline** toggle, a **search & filters** button that opens a panel (search, Focus switch with depth, filters), a "focused on ... N of M" label, and a "skip to outline" button for keyboard users (first Tab stop). One search state (`useGraphView`) drives both views. Outline mode shows the tree over the map (the map is inert while hidden).
+- Map canvas (GraphCanvas.tsx, marked [search]): new optional props `visibleIds`, `highlightId`, `showSuggested`. It draws only the visible items and the links between them, rings and names the searched item, opens A's detail card for it and moves the camera to it. Island positions are untouched (anchors still come from all subjects).
+- /outline still exists as a stand-alone page (same panel). The nav link was removed.
+- Tested: 209 unit tests; real browser run (search with a typo, Focus 8 / 24 of 78, filters, Outline toggle moves focus to the Outline heading); axe: no violations on the map page in map mode and outline mode, dark/light x default/all accessibility options.
+- Note: after pulling these changes, restart `npm run dev` if the map page sticks on "drawing your map" (stale dev compile).

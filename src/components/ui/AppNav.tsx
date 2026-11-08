@@ -14,7 +14,6 @@ import AuthLinks from './AuthLinks'; // [auth]
 const LINKS = [
   { href: '/world', label: 'map' },
   { href: '/upload', label: 'upload' },
-  { href: '/outline', label: 'outline' }, // [outline] the accessible list view of the same map
   { href: '/deadlines', label: 'deadlines' },
   { href: '/settings', label: 'settings' },
 ];

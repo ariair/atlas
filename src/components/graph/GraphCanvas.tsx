@@ -126,7 +126,10 @@ function Icon({ d }: { d: string }) {
   );
 }
 
-export default function GraphCanvas({ world }: { world: World }) {
+// [search] visibleIds: draw only these items (null = all). highlightId: the searched item. showSuggested: from the filters.
+export default function GraphCanvas({
+  world, visibleIds = null, highlightId = null, showSuggested = true,
+}: { world: World; visibleIds?: Set<string> | null; highlightId?: string | null; showSuggested?: boolean }) {
   const fgRef = useRef<FGMethods | undefined>(undefined);
   const boxRef = useRef<HTMLDivElement>(null);
   const tipRef = useRef<HTMLDivElement>(null);
@@ -163,6 +166,25 @@ export default function GraphCanvas({ world }: { world: World }) {
   }, [world, startReduced]);
   const graphData = useMemo(() => ({ nodes: graph.nodes, links: graph.links }), [graph]);
   const courseCode = useMemo(() => new Map(world.courses.map((c) => [c.id, c.code])), [world.courses]);
+
+  // [search] The searched item: ringed and named on the map, its detail card opened, the camera moved to it.
+  const highlightRef = useRef<string | null>(highlightId);
+  const [seenHighlight, setSeenHighlight] = useState<string | null>(null);
+  if (highlightId !== seenHighlight) {
+    setSeenHighlight(highlightId);
+    if (highlightId) setSelectedId(highlightId);
+  }
+  useEffect(() => {
+    highlightRef.current = highlightId;
+    if (!highlightId) return;
+    const fg = fgRef.current;
+    const n = graph.nodes.find((x) => x.id === highlightId);
+    if (!fg || !n || n.x === undefined || n.y === undefined) return;
+    userMovedRef.current = true; // stop re-fitting the whole map over the top of this
+    const ms = reduced ? 0 : 600;
+    fg.centerAt(n.x, n.y, ms);
+    fg.zoom(Math.max(fg.zoom(), 2.4), ms);
+  }, [highlightId, graph.nodes, reduced]);
 
   // How many links touch each dot: better-connected dots are drawn a little larger.
   const degree = useMemo(() => {
@@ -352,10 +374,23 @@ export default function GraphCanvas({ world }: { world: World }) {
 
       // [settings] Node names on the map: "hover" (default) draws none here; "zoom" shows them as you zoom in;
       // "always" shows every name. Names fade with the rest of the map while another dot is hovered.
+      const isMatch = highlightRef.current === node.id; // [search]
+      if (isMatch) {
+        ctx.beginPath();
+        ctx.arc(x, y, r + 6 / scale, 0, 2 * Math.PI);
+        ctx.lineWidth = 2.5 / scale;
+        ctx.strokeStyle = P.ink;
+        ctx.stroke();
+        ctx.beginPath();
+        ctx.arc(x, y, r + 11 / scale, 0, 2 * Math.PI);
+        ctx.lineWidth = 1 / scale;
+        ctx.strokeStyle = rgba(P.ink, 0.45);
+        ctx.stroke();
+      }
       const mode = settingsRef.current.nodeNames;
-      if (mode !== 'hover') {
+      if (mode !== 'hover' || isMatch) {
         const important = node.domains.length > 1 || (degree.get(node.id) ?? 0) >= 5;
-        const show = mode === 'always' || scale >= (important ? 1.6 : 2.6);
+        const show = isMatch || mode === 'always' || scale >= (important ? 1.6 : 2.6);
         if (show) {
           const lit = alphaFor(!!a.shown?.nodes.has(node.id));
           const fontPx = 13 / scale;
@@ -511,12 +546,13 @@ export default function GraphCanvas({ world }: { world: World }) {
             linkWidth={linkWidth}
             linkLineDash={(l) => (l.edge.status === 'suggested' ? [4, 4] : null)}
             // [settings] hidden subjects, and the "show suggested links" switch
-            nodeVisibility={(n) => !n.domains.every((d) => hiddenSubjects.has(d))}
+            nodeVisibility={(n) => !n.domains.every((d) => hiddenSubjects.has(d)) && (!visibleIds || visibleIds.has(n.id))}
             linkVisibility={(l) => {
-              if (!settings.showSuggested && l.edge.status === 'suggested') return false;
+              if ((!settings.showSuggested || !showSuggested) && l.edge.status === 'suggested') return false;
               const s = l.source as CanvasNode;
               const t = l.target as CanvasNode;
-              const gone = (n: CanvasNode) => !!n?.domains && n.domains.every((d) => hiddenSubjects.has(d));
+              // [search] hidden by a subject setting, or left out by the search, filters or Focus
+              const gone = (n: CanvasNode) => !!n?.domains && (n.domains.every((d) => hiddenSubjects.has(d)) || (!!visibleIds && !visibleIds.has(n.id)));
               return !gone(s) && !gone(t);
             }}
             linkDirectionalArrowLength={arrowLength}
