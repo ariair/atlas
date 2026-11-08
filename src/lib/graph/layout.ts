@@ -8,7 +8,7 @@ export interface Point {
 
 // Okabe-Ito colour-blind-safe palette, ordered so the darkest blue (hard to see on a
 // dark background) is used last. Colour is never the only cue: islands also get labels.
-export const DOMAIN_PALETTE = ['#E69F00', '#56B4E9', '#009E73', '#F0E442', '#CC79A7', '#D55E00', '#0072B2'];
+export const DOMAIN_PALETTE = ['#E3A93D', '#78B4DE', '#3DAE8C', '#E8DE7A', '#C98AB0', '#D67A48', '#4A8CC0'];
 export const NEUTRAL_COLOR = '#9CA3AF';
 
 export const ANCHOR_STRENGTH = 0.12; // single-domain nodes

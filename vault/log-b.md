@@ -72,3 +72,9 @@ Schemas: src/lib/nodePatch.ts. DB functions: src/db/queries.ts. Tested against a
 - Rule: login on => logged-out visitors are demo-only; a session cookie that is not valid gets a 401 (never data); new accounts start empty; `npm run db:claim` moves the shared demo user's data into your account.
 - Small [auth] edits in Person A's files: components/ui/AppNav.tsx (login links), components/graph/WorldView.tsx (empty-map invitation). New: components/ui/AuthLinks.tsx.
 - Tested: 170 unit tests; a production build with fake Auth0 settings (logged-out visitor, forged cookie, demo guards, DB unchanged).
+
+## Sync: merged Person A's redesign (floating nav, alerts bell, node detail panel, animated landing, softer palette) with settings and login
+- Only AppNav conflicted. Kept A's nav and wired its log in / sign up pills to the real Auth0 login (src/components/ui/AuthLinks.tsx); shows nothing until Auth0 is configured.
+- Fixes found while re-scanning the merged result: A's skip link showed over the demo bar (now hidden until focused), and the map key was too faint in light theme (full opacity in light).
+- A replaced the due-soon banner with the alerts bell (DueBanner.tsx is unused). The PRD (section 5C) still describes a dismissible role=alert welcome banner: Person A and Person B to confirm.
+- Re-ran axe on all 5 pages in dark and light, default and all accessibility options: no violations. 170 tests pass.
