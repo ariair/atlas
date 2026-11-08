@@ -18,7 +18,7 @@ export default function AccountSettings({ auth }: { auth: AuthInfo | null }) {
             <p className="mt-1 break-all font-mono text-ink-muted">{auth.id}</p>
             <p className="mt-1 max-w-prose text-ink-muted">You only need this if the person who runs Atlas asks you to move earlier data into your account.</p>
           </div>
-          <a href="/auth/logout?returnTo=%2F" className="btn w-fit">Log out</a>
+          <a href="/auth/logout" className="btn w-fit">Log out</a>
           <p className="max-w-prose text-ink-muted">Deleting your data (below) removes your map from Atlas. Your login itself stays with the login provider.</p>
         </>
       ) : (
