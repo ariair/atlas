@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import DeadlinesView from './DeadlinesView';
 
-export const metadata: Metadata = { title: 'Deadlines | Atlas' };
 
 export default function DeadlinesPage() {
   return (

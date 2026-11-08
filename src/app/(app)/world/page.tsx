@@ -1,7 +1,5 @@
-import type { Metadata } from 'next';
 import WorldView from '@/components/graph/WorldView';
 
-export const metadata: Metadata = { title: 'map' };
 
 // The world page is the map itself: it fills everything under the top bar.
 export default function WorldPage() {
