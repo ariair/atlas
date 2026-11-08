@@ -145,3 +145,7 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - New routes: POST /api/account/password, POST /api/account/verify-email (60 second cooldown each). GET /api/account also returns emailVerified, provider, canChangePassword, canResendVerification. Files: lib/accountInfo.ts, auth0Account.ts, cooldown.ts. getSessionUser now includes emailVerified.
 - Resend uses a machine-to-machine Auth0 app "Atlas account emails" (AUTH0_MGMT_CLIENT_ID / AUTH0_MGMT_CLIENT_SECRET in .env.local and Vercel Production); see vault/auth0-setup.md.
 - Open: password minimum length is an Auth0 setting (Authentication > Database > Password Policy), not in code. Custom login page: brand Auth0's Universal Login in the dashboard (not decided).
+
+## 2026-11-08: Keep the searched node selected after "update links" (Person B)
+- `[search]` small edit in Person A's `src/lib/graph/useGraphView.ts`: the best search match is held while the query is unchanged (even if a reload reorders or drops it), so updating links no longer moves the card/camera to another node. New search still moves it.
+- Not reproduced against real data; checked with a simulated reload in demo mode. Test with a real relink on the live site.

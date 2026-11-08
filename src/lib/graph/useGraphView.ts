@@ -22,7 +22,13 @@ export function useGraphView(world: World | null) {
   const results = useMemo(() => search(query, 8), [search, query]);
 
   // The item being looked at: the one the user picked, or else the best match while typing.
-  const activeId = picked && w.nodes.some((n) => n.id === picked) ? picked : (results[0]?.node.id ?? null);
+  // [search] The best match is held while the query is unchanged (even if a reload reorders or drops it from the results).
+  // Otherwise adding detail to an item (which rewrites its text) would make the map jump to a different node.
+  const [held, setHeld] = useState<{ query: string; id: string } | null>(null);
+  const heldOk = held !== null && held.query === query && w.nodes.some((n) => n.id === held.id);
+  const bestId = heldOk ? held.id : (results[0]?.node.id ?? null);
+  if ((held?.id ?? null) !== bestId || (bestId !== null && held?.query !== query)) setHeld(bestId ? { query, id: bestId } : null);
+  const activeId = picked && w.nodes.some((n) => n.id === picked) ? picked : bestId;
   const activeNode = activeId ? (w.nodes.find((n) => n.id === activeId) ?? null) : null;
 
   const visibleIds = useMemo(() => {
