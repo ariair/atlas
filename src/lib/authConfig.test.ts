@@ -15,6 +15,13 @@ describe('authConfigured', () => {
   });
 });
 
+describe('authConfigured with DEMO=1', () => {
+  it('turns login off even when all four settings exist', () => {
+    expect(authConfigured({ ...full, DEMO: '1' })).toBe(false);
+    expect(authConfigured({ ...full, DEMO: '0' })).toBe(true);
+  });
+});
+
 describe('hasSessionCookie', () => {
   it('sees the session cookie, including split chunks', () => {
     expect(hasSessionCookie(req('__session=abc'))).toBe(true);

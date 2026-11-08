@@ -1,6 +1,8 @@
 // Is login switched on, and does this request carry a login cookie? No SDK imports here, so it is cheap and easy to test.
 // Login is ON only when all four Auth0 settings exist. Without them Atlas works exactly as before (one shared demo user).
+// DEMO=1 is the "hackathon is over" switch: login and sign up are off for everyone (no /auth routes, inactive buttons) and every visitor sees the demo.
 export function authConfigured(env: Record<string, string | undefined> = process.env): boolean {
+  if (env.DEMO === '1') return false;
   return Boolean(env.AUTH0_DOMAIN?.trim() && env.AUTH0_CLIENT_ID?.trim() && env.AUTH0_CLIENT_SECRET?.trim() && env.AUTH0_SECRET?.trim());
 }
 
