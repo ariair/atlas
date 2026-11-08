@@ -260,6 +260,12 @@ a {
   }
 }
 
+/* Page content rises in once, one block after another (set --i on each block). */
+.rise {
+  animation: pop-item 480ms var(--ease-out) backwards;
+  animation-delay: calc(var(--i, 0) * 70ms);
+}
+
 /* Top bar: floats in once, and the logo twists while its name slides out of it. */
 .nav-enter {
   animation: nav-enter 600ms var(--ease-out) backwards;
