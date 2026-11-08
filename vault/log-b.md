@@ -120,3 +120,9 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - AppNav got a `[study]` link (one line). Concept map shows as text; the Mermaid source is behind a toggle, a renderer is still to add.
 - Tested in demo mode in the browser (guide, 5-question quiz, marking) and axe: no violations, dark/light x default/all accessibility. Not tested logged in with real AI or on a phone width.
 - Note: restart `npm run dev` if the nav shows no "study" link or the console shows a nav hydration warning.
+
+## 2026-11-07: Tab icon and titles, CLAUDE.md refresh (Person B)
+- Atlas icon replaces the default favicon (src/app/icon.svg, icon.png, apple-icon.png). Tab title is just "atlas" on every page (set in layout.tsx; per-page titles removed from the six (app) pages).
+- Merged Person A's study flow (class > topics > related, reset, PDFs) and phone nav; synced to main through PR 15 to 17; deployed by the user.
+- CLAUDE.md updated: Auth0, tutor, search/Focus/Outline, settings, gotchas, sync-point steps.
+- Open: Accept/Reject UI for suggested links and a "study this" button in NodeDetail (backend exists, no UI); mastery colours on the map; rendered Mermaid diagram; confirm alerts bell replaces the welcome banner; real Sonnet test of upload and tutor on the live site; decide on closing Auth0 sign-ups; Devpost write-up and demo script.
