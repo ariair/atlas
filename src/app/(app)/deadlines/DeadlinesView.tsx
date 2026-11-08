@@ -7,7 +7,8 @@ import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { Course, Deadline, World } from '@/types';
 import { GROUP_LABELS, GROUP_ORDER, groupDeadlines, groupKey, type DeadlineGroupKey } from '@/lib/deadlines';
 import { generateIcs, googleCalendarUrl, isAllDay } from '@/lib/ics';
-import { courseColors } from '@/lib/graph/layout';
+import { PALETTES, courseColors } from '@/lib/graph/layout';
+import { useSettings } from '@/lib/useSettings';
 import { priorityOf } from '@/lib/priority';
 import BubbleToggle from '@/components/ui/BubbleToggle';
 import { relatedTopicIds, studyHref } from '@/lib/studyLink';
@@ -74,7 +75,8 @@ export default function DeadlinesView() {
   }, []);
 
   const courses = useMemo(() => new Map<string, Course>((world?.courses ?? []).map((c) => [c.id, c])), [world]);
-  const colorOfCourse = useMemo(() => (world ? courseColors(world) : new Map<string, string>()), [world]);
+  const { colourVision } = useSettings().settings;
+  const colorOfCourse = useMemo(() => (world ? courseColors(world, PALETTES[colourVision]) : new Map<string, string>()), [world, colourVision]);
 
   const filtered = useMemo(() => {
     if (!world || !now) return [];

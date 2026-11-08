@@ -4,7 +4,8 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import { WorldSchema } from '@/lib/schemas';
 import { relatedTopics } from '@/lib/tutor/related';
 import { QuizResponseSchema, StudyResponseSchema, type Question, type StudyResponse } from '@/lib/tutor/schemas';
-import { courseColors } from '@/lib/graph/layout';
+import { PALETTES, courseColors } from '@/lib/graph/layout';
+import { useSettings } from '@/lib/useSettings';
 import type { World } from '@/types';
 import { postJson } from './api';
 import GuideView from './GuideView';
@@ -23,6 +24,7 @@ const chip =
   'flex min-h-11 cursor-pointer items-center gap-3 rounded-xl border px-3 transition-colors duration-150 has-[:focus-visible]:outline has-[:focus-visible]:outline-[3px] has-[:focus-visible]:outline-offset-2 has-[:focus-visible]:outline-ink';
 
 export default function StudyScreen() {
+  const { settings } = useSettings();
   const [world, setWorld] = useState<World | null>(null);
   const [loadError, setLoadError] = useState('');
   const [step, setStep] = useState<Step>('class');
@@ -95,7 +97,7 @@ export default function StudyScreen() {
   if (groups.length === 0) return <p className="mt-6">Your map is empty. <a className="underline" href="/upload">Add a course</a> and its topics will appear here.</p>;
 
   const course = groups.find((g) => g.course.id === courseId) ?? null;
-  const shades = courseColors(world);
+  const shades = courseColors(world, PALETTES[settings.colourVision]);
   const classTopics = course?.nodes ?? [];
   const pickedValid = picked.filter((id) => classTopics.some((n) => n.id === id));
   const related = relatedTopics(world, pickedValid);
