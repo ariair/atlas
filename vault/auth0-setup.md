@@ -54,3 +54,8 @@ With login on, the lockdown holds: logged-out visitors are demo-only. To open th
 
 ## Facts checked against the installed SDK (@auth0/nextjs-auth0 4.33.0)
 Session cookie is `__session` (split into `__session__0`, `__session__1` when large). `session.user.sub` is the account id. `auth0.middleware(request)` takes a Request and returns the response. Login accepts `returnTo` and `screen_hint=signup`.
+
+## Resend verification email (settings > account)
+- Needs a machine-to-machine app. Created: **Atlas account emails**, client id `GmmyzDW0YXkbksxQQcBawb3jFrbeueiS` (not secret). The Auth0 MCP could not grant it API access (missing `create:client_grants`), so do this once in the dashboard: Applications > APIs > Auth0 Management API > Machine To Machine Applications > turn on **Atlas account emails** > tick `update:users` > Update.
+- Then set `AUTH0_MGMT_CLIENT_ID` (the id above) and `AUTH0_MGMT_CLIENT_SECRET` (copy from that app's Settings tab) in `.env.local` and in Vercel Production, redeploy. Without them the resend button is hidden and the section says to log out and back in after verifying.
+- Do not use the MCP's "save credentials to file" for this app: it would overwrite the AUTH0_* login keys.

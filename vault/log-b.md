@@ -139,3 +139,9 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - Log out: removed `?returnTo=/` (Auth0 rejects a relative address); it returns to APP_BASE_URL by default.
 - Drop-down "user settings" links to /settings#account for now; Person A builds that section and needs a username editor there (`PUT /api/account` with `{ username }`).
 - Migration 0002 applied to the live database.
+
+## 2026-11-07: Account tab backend (Person B)
+- Settings > Account now has account settings: username (PUT /api/account), email verified status with resend, change password (emails an Auth0 reset link, password accounts only). Logout and the account id box were removed from the page (logout lives in the header drop-down).
+- New routes: POST /api/account/password, POST /api/account/verify-email (60 second cooldown each). GET /api/account also returns emailVerified, provider, canChangePassword, canResendVerification. Files: lib/accountInfo.ts, auth0Account.ts, cooldown.ts. getSessionUser now includes emailVerified.
+- Resend uses a machine-to-machine Auth0 app "Atlas account emails" (AUTH0_MGMT_CLIENT_ID / AUTH0_MGMT_CLIENT_SECRET in .env.local and Vercel Production); see vault/auth0-setup.md.
+- Open: password minimum length is an Auth0 setting (Authentication > Database > Password Policy), not in code. Custom login page: brand Auth0's Universal Login in the dashboard (not decided).
