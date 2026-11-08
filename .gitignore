@@ -52,3 +52,9 @@ START-HERE.md
 RESEARCH-AND-PITCH.md
 .DS_Store
 vault/.obsidian/
+.mcp.json
+
+# Auth0 credentials
+.auth0-mcp-state.json
+
+.auth0-mcp-writes.log

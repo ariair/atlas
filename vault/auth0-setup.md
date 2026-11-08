@@ -2,6 +2,13 @@
 
 Login is OFF until all four Auth0 settings exist. With them, visitors who are not logged in only ever see the demo (sample world, recorded AI, nothing saved). Real data, uploads and AI need an account. Everything below is for Person B.
 
+## STATUS (2026-11-07)
+- Done via the Auth0 MCP: tenant `dev-ju4rkrovlfade6kq` (us), application **Atlas** (Regular Web Application, client id `YFC8vrTPhy4vrd8dIQUsNeiFyXBprcEm`) with callback, logout and web-origin URLs for localhost:3000, www.myatlas.study and atlas-three-neon.vercel.app. The client id and domain are not secret.
+- Done: the four login settings (plus APP_BASE_URL=http://localhost:3000) were written to the local `.env.local` by the Auth0 MCP; the secret never passed through chat. Local login is configured.
+- To do (Person B): add AUTH0_DOMAIN, AUTH0_CLIENT_ID, AUTH0_CLIENT_SECRET and AUTH0_SECRET to Vercel Production, then redeploy. Do NOT add APP_BASE_URL on Vercel.
+- To do: log in once locally, copy the Account id from Settings > Account, run `npm run db:claim -- "<id>"` (dry run), then with `--yes`.
+- The MCP's own files (.mcp.json, .auth0-mcp-writes.log) are gitignored and hold no secrets.
+
 ## What the code does
 - `src/proxy.ts`: first the site access gate (SITE_ACCESS_KEY), then Auth0's middleware, which serves /auth/login, /auth/logout, /auth/callback and /auth/profile and keeps the session cookie fresh.
 - `src/lib/user.ts`: `getUserId()` returns the Auth0 account id ("sub", for example `google-oauth2|123`). No session means `AuthRequiredError`, which routes turn into a clean 401. It never falls back to the demo user while login is on.
