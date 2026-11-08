@@ -1,231 +1,211 @@
 'use client';
 
-// The landing page's map. It is the real Sample University constellation, but alive: every dot drifts
-// slowly, dots near the pointer ease away from it, and the whole map leans toward the cursor.
-// Lines follow their dots because both use the same displacement function of position, time and pointer.
-// With reduced motion, nothing moves and it is the same still picture as before.
-import { useEffect, useRef } from 'react';
-import { BONE, type Constellation, type Dot } from '@/lib/graph/constellation';
+// The landing page's backdrop: a big made-up network. A handful of hubs each grow long, wandering branches
+// (five to eight dots, bending as they go) in every direction. Colour follows the region of the screen, so each
+// corner is its own subject, like the real map's clusters; white bridge dots link the regions where they meet.
+// Everything is laid out from fixed numbers, so it looks the same every load.
+// It is alive: dots drift on slow waves and ease toward the pointer wherever it is on the window, each one
+// following with its own small lag so the whole thing moves like water. Reduced motion: a still picture.
+import { useEffect, useMemo, useRef } from 'react';
 
-const DIM = 0.3;
-const REACH = 90; // how far from the pointer dots feel it (in the 800x520 picture's units)
-const PULL = 3; // the most a dot leans toward the pointer
+const W = 1600;
+const H = 1000;
+const BONE = '#F4F4F4';
+// One colour per region: top left, top right, bottom left, bottom right.
+const REGION = ['#78B4DE', '#3DAE8C', '#E3A93D', '#C98AB0'];
+const regionOf = (x: number, y: number) => (x < W / 2 ? 0 : 1) + (y < H * 0.5 ? 0 : 2);
 
-function Shape({ d }: { d: Dot }) {
-  const common = { fill: d.color, opacity: d.lit ? 1 : DIM };
-  if (d.bridge) {
-    return (
-      <g opacity={d.lit ? 1 : DIM}>
-        <circle cx={d.x} cy={d.y} r={d.r} fill={BONE} />
-        <circle cx={d.x} cy={d.y} r={d.r + 2.5} fill="none" stroke={BONE} strokeOpacity="0.45" strokeWidth="1.5" />
-      </g>
-    );
-  }
-  if (d.type === 'assignment') {
-    const k = d.r * 1.3;
-    return <polygon points={`${d.x},${d.y - k} ${d.x + k},${d.y} ${d.x},${d.y + k} ${d.x - k},${d.y}`} {...common} />;
-  }
-  if (d.type === 'exam') {
-    const k = d.r * 0.9;
-    return <rect x={d.x - k} y={d.y - k} width={2 * k} height={2 * k} {...common} />;
-  }
-  return <circle cx={d.x} cy={d.y} r={d.r} {...common} />;
+interface N {
+  x: number;
+  y: number;
+  r: number;
+  color: string;
+  bridge: boolean;
+}
+interface E {
+  a: number;
+  b: number;
+  color: string;
 }
 
-export default function HeroMap({ map }: { map: Constellation }) {
-  const { width: W, height: H } = map;
-  const f = map.focus;
+function build() {
+  let seed = 11;
+  const rnd = () => ((seed = (seed * 16807) % 2147483647) - 1) / 2147483646;
+  const nodes: N[] = [];
+  const edges: E[] = [];
+  const ends: { i: number; hub: number }[] = [];
+
+  // Hubs on a loose 4 x 3 grid, nudged so it does not look like a grid.
+  const hubs: number[] = [];
+  for (let gy = 0; gy < 3; gy++) {
+    for (let gx = 0; gx < 4; gx++) {
+      const x = ((gx + 0.5) / 4) * W + (rnd() - 0.5) * 170;
+      const y = ((gy + 0.5) / 3) * H + (rnd() - 0.5) * 150;
+      hubs.push(nodes.length);
+      nodes.push({ x, y, r: 5.5, color: REGION[regionOf(x, y)], bridge: false });
+    }
+  }
+  const inside = (x: number, y: number) => x > -30 && x < W + 30 && y > -30 && y < H + 30;
+
+  const grow = (from: number, hub: number, angle: number, steps: number, color: string, twig: boolean) => {
+    let cur = from;
+    let a = angle;
+    for (let s = 0; s < steps; s++) {
+      a += (rnd() - 0.5) * 0.9;
+      const len = 62 + rnd() * 48;
+      const x = nodes[cur].x + Math.cos(a) * len;
+      const y = nodes[cur].y + Math.sin(a) * len;
+      if (!inside(x, y)) break;
+      const i = nodes.length;
+      nodes.push({ x, y, r: 2.2 + rnd() * 1.4, color, bridge: false });
+      edges.push({ a: cur, b: i, color });
+      cur = i;
+      if (!twig && s === 2 && rnd() < 0.55) grow(i, hub, a + (rnd() < 0.5 ? 1 : -1) * (0.8 + rnd() * 0.5), 3 + Math.floor(rnd() * 2), color, true);
+    }
+    if (cur !== from) ends.push({ i: cur, hub });
+  };
+
+  hubs.forEach((h, hi) => {
+    const branches = 4 + Math.floor(rnd() * 2);
+    const base = rnd() * Math.PI * 2;
+    for (let b = 0; b < branches; b++) {
+      grow(h, hi, base + (b / branches) * Math.PI * 2 + (rnd() - 0.5) * 0.5, 5 + Math.floor(rnd() * 4), nodes[h].color, false);
+    }
+  });
+
+  // Where branches of different colours come close, a white link joins them: these dots turn white (bridges).
+  let bridges = 0;
+  for (let p = 0; p < ends.length && bridges < 16; p++) {
+    for (let q = p + 1; q < ends.length && bridges < 16; q++) {
+      const a = nodes[ends[p].i];
+      const b = nodes[ends[q].i];
+      if (a.color === b.color) continue;
+      if (Math.hypot(a.x - b.x, a.y - b.y) < 175) {
+        edges.push({ a: ends[p].i, b: ends[q].i, color: BONE });
+        a.bridge = b.bridge = true;
+        bridges++;
+        break;
+      }
+    }
+  }
+  // Round so the server and the browser (whose sin and cos can differ in the last digit) print identical numbers.
+  for (const n of nodes) {
+    n.x = Math.round(n.x * 10) / 10;
+    n.y = Math.round(n.y * 10) / 10;
+    n.r = Math.round(n.r * 10) / 10;
+  }
+  return { nodes, edges };
+}
+
+export default function HeroMap() {
+  const net = useMemo(() => build(), []);
   const svgRef = useRef<SVGSVGElement>(null);
-  const tipRef = useRef<HTMLDivElement>(null);
 
   useEffect(() => {
     const svg = svgRef.current;
     if (!svg || window.matchMedia('(prefers-reduced-motion: reduce)').matches) return;
-    const dots = Array.from(svg.querySelectorAll<SVGGElement>('[data-dot]'));
-    const lines = Array.from(svg.querySelectorAll<SVGLineElement>('line[data-x1]'));
+    const dots = Array.from(svg.querySelectorAll<SVGGElement>('[data-i]'));
+    const lines = Array.from(svg.querySelectorAll<SVGLineElement>('line[data-a]'));
     const layer = svg.querySelector<SVGGElement>('[data-layer]');
-    const pointer = { x: -999, y: -999, tx: 0, ty: 0, lx: 0, ly: 0, active: false };
+    const off = net.nodes.map(() => ({ x: 0, y: 0 }));
+    const ptr = { x: -9999, y: -9999, sx: -9999, sy: -9999, tx: 0, ty: 0, lx: 0, ly: 0, on: 0, want: 0 };
     let raf = 0;
     let visible = true;
 
-    const field = (x: number, y: number, t: number): [number, number] => {
-      let dx = Math.sin(t * 0.0005 + y * 0.03) * 2.2 + Math.cos(t * 0.0003 + x * 0.02) * 1.2;
-      let dy = Math.cos(t * 0.0004 + x * 0.03) * 2.2 + Math.sin(t * 0.0004 + y * 0.02) * 1.2;
-      // Dots lean a hair toward the pointer instead of running from it, so you can rest the cursor
-      // on any dot (the highlighted one included) and it holds still.
-      if (pointer.active) {
-        const vx = pointer.x - x;
-        const vy = pointer.y - y;
-        const dist = Math.hypot(vx, vy);
-        if (dist < REACH && dist > 0.1) {
-          const k = (1 - dist / REACH) ** 2 * PULL;
-          dx += (vx / dist) * k;
-          dy += (vy / dist) * k;
-          // Right under the pointer a dot settles: no sway, so it stays put to be read.
-          if (dist < 22) {
-            const calm = 1 - dist / 22;
-            dx *= 1 - 0.85 * calm;
-            dy *= 1 - 0.85 * calm;
-          }
-        }
-      }
-      return [dx, dy];
-    };
-
     const onMove = (e: PointerEvent) => {
-      const r = svg.getBoundingClientRect();
-      pointer.x = ((e.clientX - r.left) / r.width) * W;
-      pointer.y = ((e.clientY - r.top) / r.height) * H;
-      pointer.tx = (pointer.x / W - 0.5) * 2;
-      pointer.ty = (pointer.y / H - 0.5) * 2;
-      pointer.active = pointer.x >= 0 && pointer.x <= W && pointer.y >= 0 && pointer.y <= H;
-    };
-    // The whole page leans too: the pointer anywhere on the window nudges the map a little.
-    const onWindowMove = (e: PointerEvent) => {
-      if (!pointer.active) {
-        pointer.tx = (e.clientX / window.innerWidth - 0.5) * 2;
-        pointer.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+      const m = svg.getScreenCTM();
+      if (!m) return;
+      const p = new DOMPoint(e.clientX, e.clientY).matrixTransform(m.inverse());
+      ptr.x = p.x;
+      ptr.y = p.y;
+      if (ptr.sx < -9000) {
+        ptr.sx = p.x;
+        ptr.sy = p.y;
       }
+      ptr.tx = (e.clientX / window.innerWidth - 0.5) * 2;
+      ptr.ty = (e.clientY / window.innerHeight - 0.5) * 2;
+      ptr.want = 1;
     };
     const onLeave = () => {
-      pointer.active = false;
+      ptr.want = 0;
     };
-
     const io = new IntersectionObserver(([en]) => {
       visible = en.isIntersecting;
     });
     io.observe(svg);
 
+    const R = 260; // how far from the pointer dots feel it
     const tick = (t: number) => {
       raf = requestAnimationFrame(tick);
       if (!visible) return;
-      pointer.lx += (pointer.tx - pointer.lx) * 0.04;
-      pointer.ly += (pointer.ty - pointer.ly) * 0.04;
-      layer?.setAttribute('transform', `translate(${(pointer.lx * 6).toFixed(2)} ${(pointer.ly * 5).toFixed(2)})`);
-      for (const g of dots) {
-        const [dx, dy] = field(+g.dataset.dot!.split(',')[0], +g.dataset.dot!.split(',')[1], t);
-        g.setAttribute('transform', `translate(${dx.toFixed(2)} ${dy.toFixed(2)})`);
+      // The pointer, its strength and the lean all ease toward where they should be, so nothing snaps.
+      ptr.sx += (ptr.x - ptr.sx) * 0.14;
+      ptr.sy += (ptr.y - ptr.sy) * 0.14;
+      ptr.on += (ptr.want - ptr.on) * 0.06;
+      ptr.lx += (ptr.tx - ptr.lx) * 0.035;
+      ptr.ly += (ptr.ty - ptr.ly) * 0.035;
+      layer?.setAttribute('transform', `translate(${(ptr.lx * -22).toFixed(2)} ${(ptr.ly * -16).toFixed(2)})`);
+      for (let i = 0; i < dots.length; i++) {
+        const n = net.nodes[i];
+        let tx = Math.sin(t * 0.00045 + n.y * 0.008) * 9 + Math.cos(t * 0.0003 + n.x * 0.006) * 6;
+        let ty = Math.cos(t * 0.0004 + n.x * 0.007) * 9 + Math.sin(t * 0.00035 + n.y * 0.006) * 6;
+        const vx = ptr.sx - n.x;
+        const vy = ptr.sy - n.y;
+        const d = Math.hypot(vx, vy);
+        if (d < R && d > 0.1 && ptr.on > 0.01) {
+          const k = (1 - d / R) ** 2 * 46 * ptr.on;
+          // Mostly a pull toward the pointer, with a little sideways swirl so it flows around it.
+          tx += (vx / d) * k + (-vy / d) * k * 0.35;
+          ty += (vy / d) * k + (vx / d) * k * 0.35;
+        }
+        const o = off[i];
+        o.x += (tx - o.x) * 0.09;
+        o.y += (ty - o.y) * 0.09;
+        dots[i].setAttribute('transform', `translate(${o.x.toFixed(2)} ${o.y.toFixed(2)})`);
       }
       for (const l of lines) {
-        const [ax, ay] = field(+l.dataset.x1!, +l.dataset.y1!, t);
-        const [bx, by] = field(+l.dataset.x2!, +l.dataset.y2!, t);
-        l.setAttribute('x1', String(+l.dataset.x1! + ax));
-        l.setAttribute('y1', String(+l.dataset.y1! + ay));
-        l.setAttribute('x2', String(+l.dataset.x2! + bx));
-        l.setAttribute('y2', String(+l.dataset.y2! + by));
-      }
-      if (tipRef.current && f) {
-        const [dx, dy] = field(f.x, f.y, t);
-        const r = svg.getBoundingClientRect();
-        tipRef.current.style.marginLeft = `${((dx + pointer.lx * 6) / W) * r.width}px`;
-        tipRef.current.style.marginTop = `${((dy + pointer.ly * 5) / H) * r.height}px`;
+        const a = +l.dataset.a!;
+        const b = +l.dataset.b!;
+        l.setAttribute('x1', (net.nodes[a].x + off[a].x).toFixed(2));
+        l.setAttribute('y1', (net.nodes[a].y + off[a].y).toFixed(2));
+        l.setAttribute('x2', (net.nodes[b].x + off[b].x).toFixed(2));
+        l.setAttribute('y2', (net.nodes[b].y + off[b].y).toFixed(2));
       }
     };
     raf = requestAnimationFrame(tick);
-    window.addEventListener('pointermove', onWindowMove);
-    svg.addEventListener('pointermove', onMove);
-    svg.addEventListener('pointerleave', onLeave);
+    window.addEventListener('pointermove', onMove);
+    document.documentElement.addEventListener('pointerleave', onLeave);
     return () => {
       cancelAnimationFrame(raf);
       io.disconnect();
-      window.removeEventListener('pointermove', onWindowMove);
-      svg.removeEventListener('pointermove', onMove);
-      svg.removeEventListener('pointerleave', onLeave);
+      window.removeEventListener('pointermove', onMove);
+      document.documentElement.removeEventListener('pointerleave', onLeave);
     };
-  }, [W, H, f]);
+  }, [net]);
 
   return (
-    <figure className="relative w-full">
-      <div className="relative">
-        <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} className="h-auto w-full overflow-visible" role="img" aria-labelledby="hero-map-title">
-          <title id="hero-map-title">
-            The Sample University map: three clusters of dots for Biology, Computer Science and Mathematics, joined by
-            white bridge concepts. Gradient descent, a bridge between Computer Science and Mathematics, is highlighted with the concepts it connects to.
-          </title>
-          <g data-layer>
-            {map.lines
-              .filter((l) => !f || !l.lit)
-              .map((l) => (
-                <line
-                  key={l.id}
-                  data-x1={l.x1}
-                  data-y1={l.y1}
-                  data-x2={l.x2}
-                  data-y2={l.y2}
-                  x1={l.x1}
-                  y1={l.y1}
-                  x2={l.x2}
-                  y2={l.y2}
-                  stroke={l.color}
-                  strokeOpacity={f ? 0.32 * DIM : 0.32}
-                  strokeWidth="0.8"
-                  strokeDasharray={l.suggested ? '4 4' : undefined}
-                />
-              ))}
-            {f &&
-              map.lines
-                .filter((l) => l.lit)
-                .map((l) => (
-                  <line
-                    key={l.id}
-                    data-x1={l.x1}
-                    data-y1={l.y1}
-                    data-x2={l.x2}
-                    data-y2={l.y2}
-                    x1={l.x1}
-                    y1={l.y1}
-                    x2={l.x2}
-                    y2={l.y2}
-                    stroke={l.color}
-                    strokeWidth="1.8"
-                    strokeOpacity="0.95"
-                  />
-                ))}
-            {map.dots.map((d) => (
-              <g key={d.id} data-dot={`${d.x},${d.y}`}>
-                <Shape d={d} />
-              </g>
-            ))}
-            {f && (
-              <g data-dot={`${f.x},${f.y}`}>
-                <circle cx={f.x} cy={f.y} r="13" fill="none" stroke={BONE} strokeOpacity="0.8" strokeWidth="1.5" />
-              </g>
+    <svg ref={svgRef} viewBox={`0 0 ${W} ${H}`} preserveAspectRatio="xMidYMid slice" className="h-full w-full" aria-hidden="true" focusable="false">
+      <g data-layer>
+        {net.edges.map((e, k) => {
+          const a = net.nodes[e.a];
+          const b = net.nodes[e.b];
+          return (
+            <line key={k} data-a={e.a} data-b={e.b} x1={a.x} y1={a.y} x2={b.x} y2={b.y} stroke={e.color} strokeOpacity={e.color === BONE ? 0.55 : 0.4} strokeWidth={e.color === BONE ? 1.3 : 1} />
+          );
+        })}
+        {net.nodes.map((n, i) => (
+          <g key={i} data-i={i}>
+            {n.bridge ? (
+              <>
+                <circle cx={n.x} cy={n.y} r={4.5} fill={BONE} />
+                <circle cx={n.x} cy={n.y} r={8} fill="none" stroke={BONE} strokeOpacity="0.45" strokeWidth="1.2" />
+              </>
+            ) : (
+              <circle cx={n.x} cy={n.y} r={n.r} fill={n.color} opacity={n.r > 5 ? 1 : 0.9} />
             )}
           </g>
-        </svg>
-        {f && (
-          // The same name card the live map shows on hover, placed over the highlighted dot.
-          <div
-            aria-hidden="true"
-            data-align={f.x / W > 0.62 ? 'end' : f.x / W < 0.38 ? 'start' : 'center'}
-            className="hero-tip pointer-events-none absolute w-max max-w-[min(20rem,70%)] rounded-md border border-white/10 bg-surface/90 px-3.5 py-2.5 shadow-[0_8px_24px_rgba(0,0,0,0.35)] backdrop-blur-md"
-            style={{ left: `${(f.x / W) * 100}%`, top: `${(f.y / H) * 100}%` }}
-          >
-            <div ref={tipRef}>
-              <p className="flex items-center gap-2 font-medium leading-snug">
-                <span className="size-2.5 shrink-0 rounded-full" style={{ background: f.color }} />
-                {f.label}
-              </p>
-              <p className="mt-0.5 leading-snug text-ink-muted">{f.meta}</p>
-            </div>
-          </div>
-        )}
-      </div>
-      <figcaption className="mt-4 flex flex-wrap gap-x-5 gap-y-1 text-ink-muted">
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="size-3 rounded-full" style={{ background: '#E3A93D' }} />
-          Biology
-        </span>
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="size-3 rounded-full" style={{ background: '#78B4DE' }} />
-          Computer Science
-        </span>
-        <span className="flex items-center gap-2">
-          <span aria-hidden="true" className="size-3 rounded-full" style={{ background: '#3DAE8C' }} />
-          Mathematics
-        </span>
-        <span>Sample University is fictional.</span>
-      </figcaption>
-    </figure>
+        ))}
+      </g>
+    </svg>
   );
 }

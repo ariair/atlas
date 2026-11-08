@@ -2,7 +2,7 @@
 
 // [auth] The logged-in person's username in the nav. Press it for a small drop-down: change username, log out.
 // A person with no username yet (new sign-ups, and accounts from before usernames) gets a required prompt first.
-// Person A restyles this; the logic (GET/PUT /api/account) stays.
+// [auth] Restyled by Person A to match the bell menu (.pop-panel / .pop-item); the logic (GET/PUT /api/account) is unchanged.
 import { useCallback, useEffect, useId, useRef, useState } from 'react';
 import Link from 'next/link';
 import { createPortal } from 'react-dom';
@@ -105,21 +105,28 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
     setAccount({ email: account?.email ?? null, username });
     close();
   };
-  const row = 'btn w-full justify-start rounded-lg border-transparent bg-transparent';
+  const row = 'pop-item btn w-full justify-start rounded-lg border-transparent bg-transparent';
+  const idx = (n: number) => ({ '--i': n }) as React.CSSProperties;
 
   // "user settings" is your account (username, email). The nav's "settings" page is separate: display and data settings.
   const body = (
     <div className="flex flex-col gap-1">
-      {account?.email && <p className="truncate px-3 pb-1 text-ink-muted">{account.email}</p>}
+      {account?.email && (
+        <p className="pop-item truncate px-3 pb-1 text-ink-muted" style={idx(0)}>
+          {account.email}
+        </p>
+      )}
       {failed ? (
-        <p className="px-3 pb-1 text-ink-muted">account details did not load. try again later.</p>
+        <p className="pop-item px-3 pb-1 text-ink-muted" style={idx(1)}>
+          account details did not load. try again later.
+        </p>
       ) : (
         // For now this opens the account section of the settings page (Person A builds that section).
-        <Link href="/settings#account" className={row} onClick={close}>
+        <Link href="/settings#account" className={row} style={idx(1)} onClick={close} tabIndex={variant === 'menu' || open ? 0 : -1}>
           user settings
         </Link>
       )}
-      <a href="/auth/logout" className={row}>
+      <a href="/auth/logout" className={row} style={idx(2)} tabIndex={variant === 'menu' || open ? 0 : -1}>
         log out
       </a>
     </div>
@@ -131,7 +138,7 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
         // Portal to <body>: the nav's blur makes it the anchor for "fixed", which would clip the box.
         createPortal(
         <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/70 p-4">
-          <div role="dialog" aria-modal="true" aria-label="choose a username" className="w-full max-w-sm rounded-xl border border-white/10 bg-surface p-5">
+          <div role="dialog" aria-modal="true" aria-label="choose a username" className="rise w-full max-w-sm rounded-xl border border-white/10 bg-surface p-5 shadow-[0_14px_40px_rgba(0,0,0,0.45)]">
             <h2 className="mb-3 text-lg font-medium">welcome to atlas</h2>
             <UsernameForm initial="" required onSaved={saved} />
             <a href="/auth/logout" className="btn mt-2 w-full rounded-full border-transparent bg-transparent">
@@ -150,23 +157,26 @@ export default function AccountMenu({ variant = 'inline' }: { variant?: 'inline'
         <div ref={ref} className="relative hidden sm:block">
           <button
             type="button"
-            className="btn relative min-h-9 max-w-[10rem] rounded-full border-transparent bg-transparent px-3"
+            className="btn relative min-h-11 max-w-[10rem] rounded-full border-transparent bg-transparent px-3 active:scale-[0.97]"
             aria-haspopup="true"
             aria-expanded={open}
             aria-controls="account-menu"
             onClick={() => (open ? close() : setOpen(true))}
           >
             <span className="truncate">{account?.username ?? 'account'}</span>
-            <span aria-hidden="true">▾</span>
+            <svg width="12" height="12" viewBox="0 0 12 12" fill="none" stroke="currentColor" strokeWidth="1.6" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true" className="shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]" style={{ transform: open ? 'rotate(180deg)' : 'none' }}>
+              <path d="M2.5 4.5 6 8l3.5-3.5" />
+            </svg>
           </button>
           <div
             id="account-menu"
             role="region"
             aria-label="account"
-            hidden={!open}
-            className="absolute right-0 top-[calc(100%+10px)] z-30 w-72 rounded-xl border border-white/10 bg-surface p-2 shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
+            data-open={open}
+            style={{ '--pop-origin': '100% 0%' } as React.CSSProperties}
+            className="pop-panel absolute right-0 top-[calc(100%+10px)] z-30 w-72 rounded-xl border border-white/10 bg-surface p-2 shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
           >
-            {open && body}
+            {body}
           </div>
         </div>
       )}
