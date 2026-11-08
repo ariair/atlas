@@ -3,6 +3,8 @@ import type { World } from '../types';
 import { getDb } from './client';
 import { users, courses, topics, nodes, edges, deadlines, documents, aiUsage } from './schema';
 import { rowsToWorld, worldToRows } from './world';
+import type { NodePatch } from '../lib/nodePatch';
+import { slug } from '../lib/ingest/commit';
 import { mergeNodeFields, rewriteDeadlineNodeIds, rewriteEdgesForMerge } from '../lib/merge';
 
 /** The whole World for one user (empty arrays if they have no data yet). */
@@ -163,5 +165,96 @@ export async function mergeNodes(userId: string, keepId: string, goneId: string)
     }
     await tx.delete(nodes).where(and(eq(nodes.userId, userId), eq(nodes.id, goneId)));
     return 'ok';
+  });
+}
+
+// ---------------------------------------------------------------------------
+// Nodes and topics: edit, mastery, topic manager (prompt 4B follow-up)
+// ---------------------------------------------------------------------------
+const toNode = (r: typeof nodes.$inferSelect): import('../types').GraphNode => ({
+  id: r.id, label: r.label, type: r.type as import('../types').GraphNode['type'], courseIds: r.courseIds, domains: r.domains,
+  years: r.years, topicId: r.topicId, summary: r.summary, mastery: r.mastery,
+});
+
+/** Edit one node. 'bad_topic' means the topicId (or course) does not exist for this user. */
+export async function updateNode(userId: string, id: string, patch: NodePatch) {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select().from(nodes).where(and(eq(nodes.userId, userId), eq(nodes.id, id)));
+    if (!row) return { status: 'missing' as const };
+    if (patch.topicId) {
+      const [t] = await tx.select({ id: topics.id }).from(topics).where(and(eq(topics.userId, userId), eq(topics.id, patch.topicId)));
+      if (!t) return { status: 'bad_topic' as const };
+    }
+    const set: Partial<typeof nodes.$inferInsert> = {};
+    if (patch.label !== undefined) set.label = patch.label;
+    if (patch.summary !== undefined) set.summary = patch.summary;
+    if (patch.topicId !== undefined) set.topicId = patch.topicId;
+    if (patch.mastery !== undefined) set.mastery = patch.mastery;
+    const [updated] = await tx.update(nodes).set(set).where(and(eq(nodes.userId, userId), eq(nodes.id, id))).returning();
+    return { status: 'ok' as const, node: toNode(updated) };
+  });
+}
+
+/** Save mastery scores (0 to 1) for many nodes. Unknown ids are skipped. Returns how many were updated. */
+export async function updateMastery(userId: string, updates: { id: string; mastery: number | null }[]): Promise<number> {
+  return getDb().transaction(async (tx) => {
+    let n = 0;
+    for (const u of updates) {
+      const res = await tx.update(nodes).set({ mastery: u.mastery }).where(and(eq(nodes.userId, userId), eq(nodes.id, u.id))).returning({ id: nodes.id });
+      n += res.length;
+    }
+    return n;
+  });
+}
+
+async function courseExists(tx: Pick<ReturnType<typeof getDb>, 'select'>, userId: string, courseId: string) {
+  const [c] = await tx.select({ id: courses.id }).from(courses).where(and(eq(courses.userId, userId), eq(courses.id, courseId)));
+  return !!c;
+}
+
+export async function createTopic(userId: string, name: string, courseId: string | null) {
+  return getDb().transaction(async (tx) => {
+    if (courseId && !(await courseExists(tx, userId, courseId))) return { status: 'bad_course' as const };
+    const existing = new Set((await tx.select({ id: topics.id }).from(topics).where(eq(topics.userId, userId))).map((t) => t.id));
+    const base = `${courseId ?? 'general'}-${slug(name)}`;
+    let id = base;
+    for (let i = 2; existing.has(id); i++) id = `${base}-${i}`;
+    await tx.insert(users).values({ id: userId }).onConflictDoNothing();
+    await tx.insert(topics).values({ userId, id, name, courseId });
+    return { status: 'ok' as const, topic: { id, name, courseId } };
+  });
+}
+
+export async function updateTopic(userId: string, id: string, patch: { name?: string; courseId?: string | null }) {
+  return getDb().transaction(async (tx) => {
+    const [row] = await tx.select().from(topics).where(and(eq(topics.userId, userId), eq(topics.id, id)));
+    if (!row) return { status: 'missing' as const };
+    if (patch.courseId && !(await courseExists(tx, userId, patch.courseId))) return { status: 'bad_course' as const };
+    const set: Partial<typeof topics.$inferInsert> = {};
+    if (patch.name !== undefined) set.name = patch.name;
+    if (patch.courseId !== undefined) set.courseId = patch.courseId;
+    const [u] = await tx.update(topics).set(set).where(and(eq(topics.userId, userId), eq(topics.id, id))).returning();
+    return { status: 'ok' as const, topic: { id: u.id, name: u.name, courseId: u.courseId } };
+  });
+}
+
+/** Delete a topic. Its nodes stay, just without a topic. */
+export async function deleteTopic(userId: string, id: string): Promise<'ok' | 'missing'> {
+  return getDb().transaction(async (tx) => {
+    const gone = await tx.delete(topics).where(and(eq(topics.userId, userId), eq(topics.id, id))).returning({ id: topics.id });
+    if (gone.length === 0) return 'missing' as const;
+    await tx.update(nodes).set({ topicId: null }).where(and(eq(nodes.userId, userId), eq(nodes.topicId, id)));
+    return 'ok' as const;
+  });
+}
+
+/** Merge topic `goneId` into `keepId`: its nodes move over, then it is deleted. */
+export async function mergeTopics(userId: string, keepId: string, goneId: string): Promise<'ok' | 'missing'> {
+  return getDb().transaction(async (tx) => {
+    const found = await tx.select({ id: topics.id }).from(topics).where(and(eq(topics.userId, userId), inArray(topics.id, [keepId, goneId])));
+    if (found.length !== 2) return 'missing' as const;
+    await tx.update(nodes).set({ topicId: keepId }).where(and(eq(nodes.userId, userId), eq(nodes.topicId, goneId)));
+    await tx.delete(topics).where(and(eq(topics.userId, userId), eq(topics.id, goneId)));
+    return 'ok' as const;
   });
 }

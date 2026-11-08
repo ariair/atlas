@@ -46,3 +46,15 @@
 - src/proxy.ts + src/lib/gate.ts: while SITE_ACCESS_KEY is set in Vercel (Production), every page and API route returns 401 unless the visitor holds the key (open once with ?key=KEY, which sets an HttpOnly cookie holding a hash). Unset = open. Local dev is unaffected.
 - Removed the unauthenticated /api/ai-test route (it called Claude with no cap).
 - To OPEN the site for judging: first lock down real mode (default visitors to demo mode, protect DELETE /api/me and real saves), then delete SITE_ACCESS_KEY in Vercel and redeploy.
+
+## Nodes and topics API (for Person A: mastery, rename, topic manager)
+All return JSON; errors are {error}. In demo mode (cookie/query/env) node and mastery calls return {ok:true, demo:true, saved:false} (keep the change in client state); topic calls return 403.
+- PATCH /api/nodes/:id  body {label?, summary?, topicId?, mastery?}  (topicId null removes the topic, mastery 0..1 or null) -> {ok, node}. 404 unknown id, 400 bad topic or body. Encode ids: they contain ':' (encodeURIComponent).
+- PATCH /api/nodes  body {updates: [{id, mastery}]} (1 to 100) -> {ok, updated}. Unknown ids are skipped. Use this to save quiz results.
+- POST /api/nodes/merge  body {keepId, mergeId} -> {ok}
+- POST /api/topics  body {name, courseId?} -> 201 {ok, topic}
+- PATCH /api/topics/:id  body {name?, courseId?} -> {ok, topic}
+- DELETE /api/topics/:id -> {ok} (its nodes stay, topic cleared)
+- POST /api/topics/merge  body {keepId, mergeId} -> {ok} (nodes move to the kept topic)
+- PATCH /api/edges/:id  body {status: "accepted" | "rejected"}
+Schemas: src/lib/nodePatch.ts. DB functions: src/db/queries.ts. Tested against a throwaway user (22 checks) so real data is never touched.
