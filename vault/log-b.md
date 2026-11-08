@@ -149,3 +149,7 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 ## 2026-11-08: Keep the searched node selected after "update links" (Person B)
 - `[search]` small edit in Person A's `src/lib/graph/useGraphView.ts`: the best search match is held while the query is unchanged (even if a reload reorders or drops it), so updating links no longer moves the card/camera to another node. New search still moves it.
 - Not reproduced against real data; checked with a simulated reload in demo mode. Test with a real relink on the live site.
+
+## 2026-11-08: Vercel deploy limit (Person B)
+- Hit the free-plan cap (100 deployments per rolling 24 hours, code api-deployments-free-per-day). Every push to any branch makes a preview deploy and every merge to main makes a production deploy, plus manual `vercel deploy --prod` runs.
+- Added `vercel.json` turning off preview deploys for a/canvas and b/ingest. Merging to main still deploys by itself, so manual `vercel deploy --prod` is not needed. Shared deploy config: tell Person A.
