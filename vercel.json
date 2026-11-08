@@ -1,0 +1,8 @@
+{
+  "git": {
+    "deploymentEnabled": {
+      "a/canvas": false,
+      "b/ingest": false
+    }
+  }
+}
