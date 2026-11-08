@@ -58,3 +58,11 @@ All return JSON; errors are {error}. In demo mode (cookie/query/env) node and ma
 - POST /api/topics/merge  body {keepId, mergeId} -> {ok} (nodes move to the kept topic)
 - PATCH /api/edges/:id  body {status: "accepted" | "rejected"}
 Schemas: src/lib/nodePatch.ts. DB functions: src/db/queries.ts. Tested against a throwaway user (22 checks) so real data is never touched.
+
+## Display settings + Settings page (Person B)
+- New: /settings (src/app/(app)/settings/*): appearance (theme dark/light/system, text size, font incl. Atkinson Hyperlegible, spacing, contrast, motion), map options (node names hover/zoom/always, suggested links, subjects shown), manage subjects and courses (rename/merge subjects, edit/delete courses, rename/merge/delete topics), your data (what is stored, AI use today, export/import JSON, delete everything).
+- Settings live in this browser only (localStorage key atlas-settings-v1) and are applied before first paint by a boot script (src/lib/settings.ts). Hook: useSettings() / useResolvedTheme() in src/lib/useSettings.ts.
+- New routes: PATCH/DELETE /api/courses/:id, POST /api/subjects/rename, DELETE /api/nodes/:id, GET /api/export, POST /api/import (replaces the world), GET /api/me (what is stored + AI use). All return 403 in demo mode where they would write.
+- Edits in PERSON A'S files (small, marked "[settings]"): app/globals.css (appended light theme tokens, text-size/font/spacing/contrast/motion rules, .choice and .btn-danger; nothing above the new block changed), app/layout.tsx (Atkinson font, boot script, SettingsApplier), components/ui/AppNav.tsx (settings link), components/graph/GraphCanvas.tsx (theme-aware colours read from CSS variables, node names, suggested-links switch, hidden subjects, motion off), components/graph/GraphLegend.tsx (theme-aware key), lib/graph/tone.ts (new).
+- Tested: 153+ unit tests, throwaway-user database checks (rename/merge subjects, course edit/delete, item delete, export-import round trip), and axe-core on all 5 pages in 4 combinations (dark/light x default/all accessibility options): no violations.
+- Gotcha: ~/Documents is synced by iCloud Drive, which creates duplicate "... 2" files (seen in .next). Consider moving the project outside iCloud.

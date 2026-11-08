@@ -1,4 +1,4 @@
-import { updateNode } from '@/db/queries';
+import { deleteNode, updateNode } from '@/db/queries';
 import { isDemoRequest } from '@/lib/demo';
 import { NodePatchSchema } from '@/lib/nodePatch';
 import { getUserId } from '@/lib/user';
@@ -22,5 +22,19 @@ export async function PATCH(request: Request, ctx: RouteContext<'/api/nodes/[id]
   } catch (err) {
     console.error('[nodes] update failed:', err instanceof Error ? err.message : 'unknown');
     return Response.json({ error: 'We could not save that change. Try again.' }, { status: 500 });
+  }
+}
+
+// DELETE /api/nodes/:id -> { ok }. Removes the item and its links; deadlines just stop mentioning it. Cannot be undone.
+export async function DELETE(request: Request, ctx: RouteContext<'/api/nodes/[id]'>) {
+  const { id } = await ctx.params;
+  if (isDemoRequest(request)) return Response.json({ error: 'Demo mode is read-only.' }, { status: 403 });
+  try {
+    return (await deleteNode(await getUserId(), id)) === 'ok'
+      ? Response.json({ ok: true })
+      : Response.json({ error: 'That item was not found.' }, { status: 404 });
+  } catch (err) {
+    console.error('[nodes] delete failed:', err instanceof Error ? err.message : 'unknown');
+    return Response.json({ error: 'We could not delete that item. Try again.' }, { status: 500 });
   }
 }

@@ -4,10 +4,13 @@
 // focus, and can be folded away. Open by default on large screens; folded where it would cover the map.
 import { useState, useSyncExternalStore } from 'react';
 import { DOMAIN_PALETTE, allDomains } from '@/lib/graph/layout';
+import { toneFor } from '@/lib/graph/tone'; // [settings]
+import { useResolvedTheme } from '@/lib/useSettings';
 import type { World } from '@/types';
 
-const DOT = '#CFCFCF';
-const BONE = '#F4F4F4';
+// [settings] Follow the theme: these were fixed light-on-dark colours.
+const DOT = 'var(--ink-muted)';
+const BONE = 'var(--ink)';
 const SHAPES = [
   { label: 'concept', shape: <circle cx="10" cy="10" r="4" /> },
   { label: 'assignment', shape: <polygon points="10,4.5 15.5,10 10,15.5 4.5,10" /> },
@@ -24,6 +27,7 @@ function subscribeRoomy(cb: () => void) {
 
 export default function GraphLegend({ world }: { world: World }) {
   const domains = allDomains(world);
+  const light = useResolvedTheme() === 'light';
   // Open by default where there is room; folded on small screens. Once you toggle it, your choice wins.
   const roomy = useSyncExternalStore(subscribeRoomy, () => window.matchMedia(ROOMY).matches, () => false);
   const [chosen, setChosen] = useState<boolean | null>(null);
@@ -44,7 +48,7 @@ export default function GraphLegend({ world }: { world: World }) {
         <ul aria-label="Subjects" className="flex flex-col gap-1">
           {domains.map((d, i) => (
             <li key={d} className="pop-item flex items-center gap-2" style={item(i)}>
-              <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: DOMAIN_PALETTE[i % DOMAIN_PALETTE.length] }} />
+              <span aria-hidden="true" className="size-2.5 rounded-full" style={{ background: toneFor(DOMAIN_PALETTE[i % DOMAIN_PALETTE.length], light) }} />
               {d}
             </li>
           ))}
