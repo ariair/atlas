@@ -78,3 +78,8 @@ Schemas: src/lib/nodePatch.ts. DB functions: src/db/queries.ts. Tested against a
 - Fixes found while re-scanning the merged result: A's skip link showed over the demo bar (now hidden until focused), and the map key was too faint in light theme (full opacity in light).
 - A replaced the due-soon banner with the alerts bell (DueBanner.tsx is unused). The PRD (section 5C) still describes a dismissible role=alert welcome banner: Person A and Person B to confirm.
 - Re-ran axe on all 5 pages in dark and light, default and all accessibility options: no violations. 170 tests pass.
+
+## Brand files (for Auth0 login branding)
+- public/brand/: atlas-mark.svg/.png (transparent, for dark pages), atlas-icon.svg/.png (on a dark rounded square), atlas-icon-64.png (favicon size). Same shapes and colours as src/components/ui/AtlasMark.tsx.
+- src/proxy.ts matcher skips brand/ so the files stay public even while SITE_ACCESS_KEY is set (Auth0 must be able to load them).
+- Brand colours for Auth0 Universal Login: page background #1b1b1b, widget background #252525, text #f4f4f4, secondary text #cfcfcf, borders #7d7d7d, primary button #f4f4f4 with label #1b1b1b.
