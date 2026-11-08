@@ -584,3 +584,112 @@ a {
 :root[data-theme="light"] .map-key {
   opacity: 1;
 }
+
+
+/* "Download PDF": the printable sheets are hidden on screen. When printing, everything is hidden except
+   the sheet marked data-print-active (and the elements that contain it), in black on white. */
+.print-sheet {
+  display: none;
+}
+@page {
+  margin: 16mm;
+}
+@media print {
+  html,
+  body {
+    background: #fff !important;
+    color: #000 !important;
+    font-size: 11.5pt;
+  }
+  body *:not([data-print-active]):not([data-print-active] *):not(:has([data-print-active])) {
+    display: none !important;
+  }
+  [data-print-active] {
+    display: block !important;
+    color: #000;
+    background: #fff;
+    font-family: Georgia, 'Times New Roman', serif;
+    line-height: 1.45;
+  }
+  [data-print-active] * {
+    color: #000 !important;
+    animation: none !important;
+  }
+  /* The page around the sheet should not add padding, borders or shadows to the printout. */
+  body *:has([data-print-active]) {
+    padding: 0 !important;
+    margin: 0 !important;
+    border: 0 !important;
+    max-width: none !important;
+    box-shadow: none !important;
+    background: transparent !important;
+  }
+  .print-head {
+    border-bottom: 1.5pt solid #000;
+    margin-bottom: 12pt;
+    padding-bottom: 8pt;
+  }
+  .print-brand {
+    font-size: 9pt;
+    letter-spacing: 0.12em;
+    text-transform: uppercase;
+  }
+  .print-sheet h1 {
+    font-size: 20pt;
+    line-height: 1.15;
+    margin: 2pt 0;
+  }
+  .print-sheet h2 {
+    font-size: 14pt;
+    margin: 14pt 0 4pt;
+    break-after: avoid;
+  }
+  .print-sheet h3 {
+    font-size: 12pt;
+    margin: 8pt 0 2pt;
+    break-after: avoid;
+  }
+  .print-sheet ul,
+  .print-sheet ol {
+    margin: 2pt 0 2pt 18pt;
+    padding: 0;
+  }
+  .print-sheet ul {
+    list-style: disc;
+  }
+  .print-sheet ol {
+    list-style: decimal;
+  }
+  .print-sheet li {
+    margin: 3pt 0;
+  }
+  .print-keep {
+    break-inside: avoid;
+  }
+  .print-questions > li {
+    margin-bottom: 14pt;
+  }
+  .print-options {
+    list-style: none !important;
+    margin-left: 4pt !important;
+  }
+  .print-meta {
+    font-size: 10pt;
+  }
+  .print-name {
+    margin: 0 0 12pt;
+  }
+  .print-answer-box {
+    height: 4.5em;
+    border: 0.75pt solid #000;
+    margin-top: 4pt;
+  }
+  .print-sheet pre {
+    white-space: pre-wrap;
+    font-family: 'Courier New', monospace;
+    font-size: 10pt;
+    border: 0.75pt solid #000;
+    padding: 4pt 6pt;
+    margin: 4pt 0;
+  }
+}

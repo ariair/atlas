@@ -3,12 +3,13 @@
 import { useState } from 'react';
 import { GradeResponseSchema, type GradeResponse, type Question } from '@/lib/tutor/schemas';
 import { postJson } from './api';
-import { field, h2, panel, primaryButton } from './styles';
+import { printSheet } from './printSheet';
+import { button, field, h2, panel, primaryButton } from './styles';
 
 type Answers = Record<string, { choice: number[]; text: string }>;
 const STYLE_NAME: Record<Question['style'], string> = { mcq: 'Pick one', multi: 'Pick all that apply', short: 'Written answer', code: 'Code question' };
 
-export default function QuizView({ questions, note, labels }: { questions: Question[]; note: string; labels: Record<string, string> }) {
+export default function QuizView({ questions, note, labels, fileName }: { questions: Question[]; note: string; labels: Record<string, string>; fileName: string }) {
   const [answers, setAnswers] = useState<Answers>({});
   const [busy, setBusy] = useState(false);
   const [error, setError] = useState('');
@@ -34,9 +35,19 @@ export default function QuizView({ questions, note, labels }: { questions: Quest
 
   return (
     <section aria-labelledby="quiz-h" className={`${panel} space-y-6`}>
-      <div>
-        <h2 id="quiz-h" className={h2}>quiz</h2>
-        <p className="mt-1 text-base text-ink-muted">{note}</p>
+      <div className="flex flex-wrap items-start justify-between gap-3">
+        <div>
+          <h2 id="quiz-h" className={h2}>quiz</h2>
+          <p className="mt-1 text-base text-ink-muted">{note}</p>
+        </div>
+        <div className="flex flex-wrap gap-2">
+          <button type="button" className={`${button} rounded-full`} onClick={() => printSheet('test', `${fileName} test`)}>
+            Download test (PDF)
+          </button>
+          <button type="button" className={`${button} rounded-full`} onClick={() => printSheet('key', `${fileName} answer key`)}>
+            Answer key (PDF)
+          </button>
+        </div>
       </div>
 
       {grade && (
