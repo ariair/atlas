@@ -7,7 +7,7 @@ import { useEffect, useMemo, useState } from 'react';
 import type { Course, Deadline, World } from '@/types';
 import { GROUP_LABELS, GROUP_ORDER, groupDeadlines, groupKey, type DeadlineGroupKey } from '@/lib/deadlines';
 import { generateIcs, googleCalendarUrl, isAllDay } from '@/lib/ics';
-import { DOMAIN_PALETTE, allDomains } from '@/lib/graph/layout';
+import { courseColors } from '@/lib/graph/layout';
 import { priorityOf } from '@/lib/priority';
 
 const KINDS = ['assignment', 'quiz', 'midterm', 'final', 'project', 'other'] as const;
@@ -69,12 +69,7 @@ export default function DeadlinesView() {
   }, []);
 
   const courses = useMemo(() => new Map<string, Course>((world?.courses ?? []).map((c) => [c.id, c])), [world]);
-  const colorOfCourse = useMemo(() => {
-    const domains = world ? allDomains(world) : [];
-    const m = new Map<string, string>();
-    for (const c of world?.courses ?? []) m.set(c.id, DOMAIN_PALETTE[Math.max(0, domains.indexOf(c.domain)) % DOMAIN_PALETTE.length]);
-    return m;
-  }, [world]);
+  const colorOfCourse = useMemo(() => (world ? courseColors(world) : new Map<string, string>()), [world]);
 
   const filtered = useMemo(() => {
     if (!world || !now) return [];

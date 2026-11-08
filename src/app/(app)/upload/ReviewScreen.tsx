@@ -2,7 +2,7 @@
 
 import { useState } from 'react';
 import type { ExtractionDraft } from '@/types';
-import { deleteDeadline, deleteNode, renameNode, updateDeadline, updateNode } from '@/lib/ingest/editDraft';
+import { addBlankNode, deleteDeadline, deleteNode, NEW_NODE_MAX_LABEL, nodeProblem, renameNode, updateDeadline, updateNode } from '@/lib/ingest/editDraft';
 import { button, primaryButton } from './styles';
 
 const input = 'min-h-11 w-full rounded-lg border border-rule-strong bg-ground/60 px-2 py-1 text-lg text-ink transition-colors duration-150 hover:border-ink-muted focus:border-ink-muted';
@@ -30,7 +30,21 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
   const [error, setError] = useState('');
   const needsReview = draft.deadlines.filter((d) => d.status === 'needs_review').length;
 
+  // Add an empty row to fill in by hand, and put the cursor in its name box.
+  function addRow() {
+    const index = draft.nodes.length;
+    setDraft(addBlankNode(draft));
+    setError('');
+    setTimeout(() => document.querySelector<HTMLInputElement>(`[data-node-name="${index}"]`)?.focus(), 0);
+  }
+
   async function save() {
+    const problem0 = nodeProblem(draft);
+    if (problem0) {
+      setError(problem0.message);
+      document.querySelector<HTMLInputElement>(`[data-node-name="${problem0.index}"]`)?.focus();
+      return;
+    }
     setSaving(true);
     setError('');
     const problem = await onConfirm(draft);
@@ -108,15 +122,26 @@ export default function ReviewScreen({ initial, cached, onConfirm, onBack }: Pro
             <tbody>
               {draft.nodes.map((n, i) => (
                 <tr key={i} className="border-b border-rule align-top">
-                  <td className="p-2"><input aria-label={`Name of item ${i + 1}`} className={`${input} min-w-48`} value={n.label} onChange={(e) => setDraft(renameNode(draft, i, e.target.value))} /></td>
-                  <td className="p-2">{n.type}</td>
-                  <td className="p-2"><input aria-label={`Summary of ${n.label}`} className={`${input} min-w-64`} value={n.summary} onChange={(e) => setDraft(updateNode(draft, i, { summary: e.target.value }))} /></td>
-                  <td className="p-2"><button type="button" className={`${button} rounded-full`} onClick={() => setDraft(deleteNode(draft, i))} aria-label={`Remove ${n.label}`}>Remove</button></td>
+                  <td className="p-2"><input aria-label={`Name of item ${i + 1}`} data-node-name={i} maxLength={NEW_NODE_MAX_LABEL} className={`${input} min-w-48`} value={n.label} onChange={(e) => setDraft(renameNode(draft, i, e.target.value))} /></td>
+                  <td className="p-2">
+                    <select aria-label={`Type of ${n.label || `item ${i + 1}`}`} className={`${input} min-w-36`} value={n.type} onChange={(e) => setDraft(updateNode(draft, i, { type: e.target.value as 'concept' | 'assignment' | 'exam' }))}>
+                      {(['concept', 'assignment', 'exam'] as const).map((k) => <option key={k} value={k}>{k}</option>)}
+                      {n.type === 'course' && <option value="course">course</option>}
+                    </select>
+                  </td>
+                  <td className="p-2"><input aria-label={`Summary of ${n.label || `item ${i + 1}`}`} className={`${input} min-w-64`} value={n.summary} onChange={(e) => setDraft(updateNode(draft, i, { summary: e.target.value }))} /></td>
+                  <td className="p-2"><button type="button" className={`${button} rounded-full`} onClick={() => setDraft(deleteNode(draft, i))} aria-label={`Remove ${n.label || `item ${i + 1}`}`}>Remove</button></td>
                 </tr>
               ))}
               {draft.nodes.length === 0 && <tr><td colSpan={4} className="p-3">Nothing found.</td></tr>}
             </tbody>
           </table>
+        </div>
+        <div className="mt-4 border-t border-rule pt-4">
+          <button type="button" onClick={addRow} className={`${button} rounded-full`}>
+            Add a row
+          </button>
+          <span className="ml-3 text-ink-muted">Missing something? Add a row, then type its name, pick its type and write a summary.</span>
         </div>
       </section>
 
