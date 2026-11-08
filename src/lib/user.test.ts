@@ -31,7 +31,7 @@ describe('getUserId', () => {
 describe('getSessionUser', () => {
   it('returns public details, or null, and never throws', async () => {
     getAuth0.mockReturnValue({ getSession: async () => ({ user: { sub: 'auth0|1', name: 'Sam', email: 's@x.com', secretField: 'nope' } }) });
-    expect(await getSessionUser()).toEqual({ sub: 'auth0|1', name: 'Sam', email: 's@x.com' });
+    expect(await getSessionUser()).toEqual({ sub: 'auth0|1', name: 'Sam', email: 's@x.com', emailVerified: null });
     getAuth0.mockReturnValue({ getSession: async () => null });
     expect(await getSessionUser()).toBeNull();
     getAuth0.mockReturnValue({ getSession: async () => { throw new Error('boom'); } });

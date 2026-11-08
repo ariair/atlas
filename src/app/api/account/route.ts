@@ -1,17 +1,26 @@
 import { connection } from 'next/server';
 import { getUsername, setUsername } from '@/db/queries';
+import { accountCapabilities } from '@/lib/accountInfo';
+import { mgmtConfigured } from '@/lib/auth0Account';
 import { authConfigured } from '@/lib/authConfig';
 import { checkUsername } from '@/lib/username';
 import { authFailure, getSessionUser, getUserId } from '@/lib/user';
 
-// GET /api/account: the logged-in person's username and email. PUT /api/account { username }: pick or change the username (unique).
+// GET /api/account: the logged-in person's username, email, whether it is verified, and how they sign in (provider, canChangePassword). PUT /api/account { username }: pick or change the username (unique).
 export async function GET() {
   await connection();
   if (!authConfigured()) return Response.json({ enabled: false });
   try {
     const userId = await getUserId();
     const [username, user] = await Promise.all([getUsername(userId), getSessionUser()]);
-    return Response.json({ enabled: true, username, email: user?.email ?? null });
+    return Response.json({
+      enabled: true,
+      username,
+      email: user?.email ?? null,
+      emailVerified: user?.emailVerified ?? null,
+      ...accountCapabilities(userId),
+      canResendVerification: mgmtConfigured(),
+    });
   } catch (err) {
     const unauth = authFailure(err);
     if (unauth) return unauth;

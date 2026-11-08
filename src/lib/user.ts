@@ -21,11 +21,13 @@ export async function getUserId(): Promise<string> {
 }
 
 /** The logged-in user's public details, or null. Never throws. */
-export async function getSessionUser(): Promise<{ sub: string; name: string | null; email: string | null } | null> {
+export async function getSessionUser(): Promise<{ sub: string; name: string | null; email: string | null; emailVerified: boolean | null } | null> {
   try {
     const session = await getAuth0()?.getSession();
     const u = session?.user;
-    return u?.sub ? { sub: u.sub, name: u.name ?? u.nickname ?? null, email: u.email ?? null } : null;
+    return u?.sub
+      ? { sub: u.sub, name: u.name ?? u.nickname ?? null, email: u.email ?? null, emailVerified: typeof u.email_verified === 'boolean' ? u.email_verified : null }
+      : null;
   } catch {
     return null;
   }
