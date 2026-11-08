@@ -2,7 +2,7 @@
 
 // Log in / sign up / log out, on the right of the floating nav (styled like the rest of the pill).
 // Wide windows show them in the bar; narrow ones fold them into a person-icon drop-down.
-// Shows nothing when login is not set up. Plain <a> links on purpose: they start a login flow, so the
+// While login is not set up (or still loading) log in and sign up show as inactive buttons. Plain <a> links on purpose: they start a login flow, so the
 // browser must not pre-fetch them.
 import { useEffect, useRef, useState } from 'react';
 
@@ -39,8 +39,8 @@ export default function AuthLinks() {
     };
   }, [open]);
 
-  if (!auth?.enabled) return null;
-  const items = auth.loggedIn
+  const live = !!auth?.enabled;
+  const items = auth?.enabled && auth.loggedIn
     ? [{ href: '/auth/logout', label: 'log out', primary: false }]
     : [
         { href: LOGIN, label: 'log in', primary: false },
@@ -48,12 +48,18 @@ export default function AuthLinks() {
       ];
   return (
     <>
-      {auth.loggedIn && auth.name && <span className="hidden max-w-[10rem] truncate px-2 text-ink-muted lg:block">{auth.name}</span>}
-      {items.map((i) => (
-        <a key={i.label} href={i.href} className={i.primary ? solid : ghost}>
-          {i.label}
-        </a>
-      ))}
+      {auth?.enabled && auth.loggedIn && auth.name && <span className="hidden max-w-[10rem] truncate px-2 text-ink-muted lg:block">{auth.name}</span>}
+      {items.map((i) =>
+        live ? (
+          <a key={i.label} href={i.href} className={i.primary ? solid : ghost}>
+            {i.label}
+          </a>
+        ) : (
+          <button key={i.label} type="button" aria-disabled="true" title="coming soon" className={i.primary ? solid : ghost}>
+            {i.label}
+          </button>
+        ),
+      )}
       <div ref={box} className="relative sm:hidden">
         <button type="button" className="map-btn" aria-label="Account" aria-expanded={open} aria-controls="account-menu" onClick={() => setOpen((o) => !o)}>
           <svg width="20" height="20" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" aria-hidden="true">
@@ -68,11 +74,18 @@ export default function AuthLinks() {
           style={{ '--pop-origin': '100% 0%' } as React.CSSProperties}
           className="pop-panel absolute right-0 top-[calc(100%+10px)] z-30 flex w-[min(16rem,calc(100vw-2rem))] gap-2 rounded-xl border border-white/10 bg-surface/90 p-3 shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
         >
-          {items.map((i) => (
-            <a key={i.label} href={i.href} tabIndex={open ? 0 : -1} className={`btn flex-1 rounded-full ${i.primary ? 'btn-primary' : 'border-transparent bg-transparent'}`}>
-              {i.label}
-            </a>
-          ))}
+          {items.map((i) => {
+            const cls = `btn flex-1 rounded-full ${i.primary ? 'btn-primary' : 'border-transparent bg-transparent'}`;
+            return live ? (
+              <a key={i.label} href={i.href} tabIndex={open ? 0 : -1} className={cls}>
+                {i.label}
+              </a>
+            ) : (
+              <button key={i.label} type="button" aria-disabled="true" title="coming soon" tabIndex={open ? 0 : -1} className={cls}>
+                {i.label}
+              </button>
+            );
+          })}
         </div>
       </div>
     </>
