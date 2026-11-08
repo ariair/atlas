@@ -5,6 +5,7 @@
 // While login is not set up (or still loading) log in and sign up show as inactive buttons. Plain <a> links on purpose: they start a login flow, so the
 // browser must not pre-fetch them.
 import { useEffect, useState } from 'react';
+import AccountMenu from './AccountMenu';
 
 type Auth = { enabled: boolean; loggedIn: boolean; name: string | null };
 const ghost = "btn relative hidden min-h-9 rounded-full border-transparent bg-transparent px-[clamp(0.5rem,1.2vw,0.875rem)] after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
@@ -24,12 +25,12 @@ export default function AuthLinks({ variant = 'inline' }: { variant?: 'inline' |
   }, []);
 
   const live = !!auth?.enabled;
-  const items = auth?.enabled && auth.loggedIn
-    ? [{ href: '/auth/logout', label: 'log out', primary: false }]
-    : [
-        { href: LOGIN, label: 'log in', primary: false },
-        { href: SIGNUP, label: 'sign up', primary: true },
-      ];
+  const loggedIn = !!(auth?.enabled && auth.loggedIn);
+  if (loggedIn) return <AccountMenu variant={variant} />; // [auth] username drop-down replaces the log out link
+  const items = [
+    { href: LOGIN, label: 'log in', primary: false },
+    { href: SIGNUP, label: 'sign up', primary: true },
+  ];
   if (variant === 'menu') {
     return (
       <>
@@ -50,7 +51,6 @@ export default function AuthLinks({ variant = 'inline' }: { variant?: 'inline' |
   }
   return (
     <>
-      {auth?.enabled && auth.loggedIn && auth.name && <span className="hidden max-w-[10rem] truncate px-2 text-ink-muted lg:block">{auth.name}</span>}
       {items.map((i) =>
         live ? (
           <a key={i.label} href={i.href} className={i.primary ? solid : ghost}>

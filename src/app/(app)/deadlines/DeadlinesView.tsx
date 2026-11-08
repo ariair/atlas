@@ -3,7 +3,7 @@
 // Deadlines: a filter bar (search, course, type, priority, when), two views (a timeline grouped by
 // when it is due, and a compact list), and calendar export of exactly what the filters show.
 // Dots use each course's subject colour, always next to the course code (never colour alone).
-import { useEffect, useMemo, useState } from 'react';
+import { Fragment, useEffect, useMemo, useState } from 'react';
 import type { Course, Deadline, World } from '@/types';
 import { GROUP_LABELS, GROUP_ORDER, groupDeadlines, groupKey, type DeadlineGroupKey } from '@/lib/deadlines';
 import { generateIcs, googleCalendarUrl, isAllDay } from '@/lib/ics';
@@ -46,6 +46,8 @@ function relative(d: Deadline, now: Date): string {
 
 export default function DeadlinesView() {
   const [world, setWorld] = useState<World | null>(null);
+  const [editing, setEditing] = useState<string | null>(null); // the deadline being edited
+  const [saveNote, setSaveNote] = useState('');
   const [error, setError] = useState('');
   const [now, setNow] = useState<Date | null>(null);
   const [view, setView] = useState<'timeline' | 'list'>('timeline');
@@ -99,6 +101,13 @@ export default function DeadlinesView() {
   const groups = groupDeadlines(filtered, now);
   const total = world.deadlines.length;
 
+  // An edit was saved (or kept in memory in demo mode): update the page without reloading.
+  function applyEdit(updated: Deadline, demo: boolean) {
+    setWorld((w) => (w ? { ...w, deadlines: w.deadlines.map((x) => (x.id === updated.id ? updated : x)) } : w));
+    setEditing(null);
+    setSaveNote(demo ? `Updated “${updated.title}”. Demo mode: this change is not saved.` : `Saved “${updated.title}”.`);
+  }
+
   function clearFilters() {
     setQ('');
     setCourseId('all');
@@ -137,6 +146,11 @@ export default function DeadlinesView() {
       </>
     );
   };
+  const editBtn = (d: Deadline) => (
+    <button type="button" className="btn rounded-full" aria-label={`Edit ${d.title}`} aria-expanded={editing === d.id} onClick={() => { setSaveNote(''); setEditing(editing === d.id ? null : d.id); }}>
+      Edit
+    </button>
+  );
   const gcalLink = (d: Deadline) => {
     const gcal = googleCalendarUrl(d, courses.get(d.courseId));
     return gcal ? (
@@ -232,6 +246,8 @@ export default function DeadlinesView() {
         </ul>
       </details>
 
+      <p role="status" aria-live="polite" className={saveNote ? 'rounded-xl border border-white/10 bg-surface/60 p-3' : 'sr-only'}>{saveNote}</p>
+
       {total === 0 && (
         <p className={card}>
           No deadlines yet. <a className="underline" href="/upload">Add a course</a> to see its deadlines here.
@@ -256,6 +272,9 @@ export default function DeadlinesView() {
             <ul className="space-y-3">
               {g.items.map((d) => (
                 <li key={d.id} className="rounded-2xl border border-white/10 bg-surface/60 p-4 backdrop-blur-md transition-colors duration-150 hover:border-white/20 sm:p-5">
+                  {editing === d.id ? (
+                    <EditDeadline deadline={d} onSaved={applyEdit} onCancel={() => setEditing(null)} />
+                  ) : (
                   <div className="flex flex-wrap items-start justify-between gap-3">
                     <div className="min-w-0">
                       <p className="text-xl font-medium">{d.title}</p>
@@ -271,8 +290,12 @@ export default function DeadlinesView() {
                         {d.dueAt && g.key !== 'needs_review' && <span className="text-ink-muted"> · {relative(d, now)}</span>}
                       </p>
                     </div>
-                    {gcalLink(d)}
+                    <div className="flex flex-wrap gap-2">
+                      {editBtn(d)}
+                      {gcalLink(d)}
+                    </div>
                   </div>
+                  )}
                 </li>
               ))}
             </ul>
@@ -300,7 +323,8 @@ export default function DeadlinesView() {
                 const c = courses.get(d.courseId);
                 const gcal = googleCalendarUrl(d, c);
                 return (
-                  <tr key={d.id} className="border-b border-rule align-top last:border-0">
+                  <Fragment key={d.id}>
+                  <tr className="border-b border-rule align-top last:border-0">
                     <td className="p-3 whitespace-nowrap">
                       {d.status === 'needs_review' && <span aria-hidden="true">⚠ </span>}
                       {shortDue(d)}
@@ -318,13 +342,24 @@ export default function DeadlinesView() {
                     <td className="p-3 whitespace-nowrap">{d.weightPct !== null ? `${d.weightPct}%` : 'not set'}</td>
                     <td className="p-3">{priorityOf(d.weightPct)}</td>
                     <td className="p-3 text-right">
-                      {gcal && (
-                        <a href={gcal} target="_blank" rel="noopener noreferrer" className="btn rounded-full whitespace-nowrap" aria-label={`Add ${d.title} to Google Calendar (opens in a new tab)`}>
-                          Add to Google
-                        </a>
-                      )}
+                      <div className="flex justify-end gap-2">
+                        {editBtn(d)}
+                        {gcal && (
+                          <a href={gcal} target="_blank" rel="noopener noreferrer" className="btn rounded-full whitespace-nowrap" aria-label={`Add ${d.title} to Google Calendar (opens in a new tab)`}>
+                            Add to Google
+                          </a>
+                        )}
+                      </div>
                     </td>
                   </tr>
+                  {editing === d.id && (
+                    <tr className="border-b border-rule last:border-0">
+                      <td colSpan={7} className="p-3">
+                        <EditDeadline deadline={d} onSaved={applyEdit} onCancel={() => setEditing(null)} />
+                      </td>
+                    </tr>
+                  )}
+                  </Fragment>
                 );
               })}
             </tbody>
@@ -332,5 +367,77 @@ export default function DeadlinesView() {
         </div>
       )}
     </div>
+  );
+}
+
+const pad = (n: number) => String(n).padStart(2, '0');
+function toLocalInput(iso: string | null): string {
+  if (!iso) return '';
+  const d = new Date(iso);
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}T${pad(d.getHours())}:${pad(d.getMinutes())}`;
+}
+
+/** Edit a deadline's name, type, due date and weight. Saves with PATCH /api/deadlines/:id. */
+function EditDeadline({ deadline, onSaved, onCancel }: { deadline: Deadline; onSaved: (d: Deadline, demo: boolean) => void; onCancel: () => void }) {
+  const [title, setTitle] = useState(deadline.title);
+  const [kind, setKind] = useState<string>(deadline.kind);
+  const [due, setDue] = useState(toLocalInput(deadline.dueAt));
+  const [weight, setWeight] = useState(deadline.weightPct === null ? '' : String(deadline.weightPct));
+  const [busy, setBusy] = useState(false);
+  const [error, setError] = useState('');
+  const field = 'min-h-11 w-full rounded-lg border border-rule-strong bg-ground/60 px-3 text-lg text-ink transition-colors duration-150 hover:border-ink-muted focus:border-ink-muted';
+
+  async function save(e: React.FormEvent) {
+    e.preventDefault();
+    const w = weight.trim() === '' ? null : Number(weight);
+    if (!title.trim()) return setError('Give the deadline a name.');
+    if (w !== null && (!Number.isFinite(w) || w < 0 || w > 100)) return setError('The weight must be between 0 and 100.');
+    const dueAt = due ? new Date(due).toISOString() : null;
+    setBusy(true);
+    setError('');
+    try {
+      const res = await fetch(`/api/deadlines/${encodeURIComponent(deadline.id)}`, {
+        method: 'PATCH',
+        headers: { 'content-type': 'application/json' },
+        body: JSON.stringify({ title: title.trim(), kind, dueAt, weightPct: w }),
+      });
+      const data = await res.json().catch(() => null);
+      if (!res.ok) throw new Error(data?.error ?? `The server answered ${res.status}.`);
+      onSaved({ ...deadline, title: title.trim(), kind: kind as Deadline['kind'], dueAt, weightPct: w, status: dueAt ? 'confirmed' : 'needs_review' }, !!data?.demo);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : 'We could not save that change. Try again.');
+    }
+    setBusy(false);
+  }
+
+  return (
+    <form onSubmit={save} className="space-y-3" aria-label={`Edit ${deadline.title}`}>
+      <div className="grid gap-3 sm:grid-cols-2 lg:grid-cols-[2fr_1fr_1.4fr_0.8fr]">
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          name
+          <input autoFocus className={field} value={title} maxLength={200} onChange={(e) => setTitle(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          type
+          <select className={field} value={kind} onChange={(e) => setKind(e.target.value)}>
+            {KINDS.map((k) => <option key={k} value={k}>{k}</option>)}
+          </select>
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          due (your time)
+          <input className={field} type="datetime-local" value={due} onChange={(e) => setDue(e.target.value)} />
+        </label>
+        <label className="flex flex-col gap-1.5 text-ink-muted">
+          weight %
+          <input className={field} type="number" min={0} max={100} step="0.5" value={weight} onChange={(e) => setWeight(e.target.value)} />
+        </label>
+      </div>
+      <p className="text-base text-ink-muted">Clear the date to mark it as needing review again.</p>
+      {error && <p role="alert" className="rounded-xl border-2 border-[#D67A48] bg-[#D67A48]/10 p-3"><strong>Problem: </strong>{error}</p>}
+      <div className="flex gap-2">
+        <button type="submit" disabled={busy} className="btn btn-primary rounded-full">{busy ? 'Saving…' : 'Save'}</button>
+        <button type="button" onClick={onCancel} disabled={busy} className="btn rounded-full">Cancel</button>
+      </div>
+    </form>
   );
 }

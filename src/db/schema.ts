@@ -4,6 +4,7 @@ import { pgTable, text, integer, real, timestamp, primaryKey, index, jsonb, date
 
 export const users = pgTable('users', {
   id: text('id').primaryKey(),
+  username: text('username').unique(), // lowercase, unique across all users; null until the person picks one
   createdAt: timestamp('created_at', { withTimezone: true }).notNull().defaultNow(),
 });
 

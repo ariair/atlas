@@ -7,6 +7,7 @@ import ReviewScreen from './ReviewScreen';
 import { button, primaryButton } from './styles';
 
 type Step = 'form' | 'loading' | 'review' | 'done';
+const NEW_DEPT = '__new__';
 const field = 'mt-1.5 block min-h-11 w-full rounded-lg border border-rule-strong bg-ground/60 px-3 py-2 text-lg normal-case text-ink placeholder:text-ink-muted/60 transition-colors duration-150 hover:border-ink-muted focus:border-ink-muted';
 const card = 'rise rounded-2xl border border-white/10 bg-surface/60 p-5 backdrop-blur-md sm:p-6';
 const legend = 'mb-3 flex items-center gap-3 text-xl font-medium lowercase tracking-[-0.01em]';
@@ -24,6 +25,7 @@ export default function UploadFlow() {
   const [term, setTerm] = useState('');
   const [year, setYear] = useState('1');
   const [domains, setDomains] = useState<string[]>([]);
+  const [addingDept, setAddingDept] = useState(false); // "Add new department" was chosen in the drop-down
   const [error, setError] = useState('');
   const [draft, setDraft] = useState<ExtractionDraft | null>(null);
   const [cached, setCached] = useState(false);
@@ -37,7 +39,7 @@ export default function UploadFlow() {
   useEffect(() => {
     fetch('/api/world')
       .then((r) => (r.ok ? r.json() : null))
-      .then((w) => w && setDomains([...new Set<string>(w.courses.map((c: { domain: string }) => c.domain))]))
+      .then((w) => w && setDomains([...new Set<string>(w.courses.map((c: { domain: string }) => c.domain))].sort((a, b) => a.localeCompare(b))))
       .catch(() => {});
   }, []);
 
@@ -77,6 +79,9 @@ export default function UploadFlow() {
     }, 500);
     return () => clearTimeout(t);
   }, [text, mode]);
+
+  // Typing a new department is needed when there are no earlier ones, when "Add new" is chosen, or when a sample brings one the list doesn't have.
+  const isNewDept = domains.length === 0 || addingDept || (domain !== '' && !domains.includes(domain));
 
   async function submit(e: React.FormEvent) {
     e.preventDefault();
@@ -179,8 +184,35 @@ export default function UploadFlow() {
             </div>
             <div>
               <label htmlFor="domain" className="font-medium">Department (this sets its island)</label>
-              <input id="domain" required list="domains" value={domain} onChange={(e) => setDomain(e.target.value)} className={field} placeholder="Computer Science" />
-              <datalist id="domains">{domains.map((d) => <option key={d} value={d} />)}</datalist>
+              {/* Departments from your earlier classes, plus "Add new department…". With none yet, just type one. */}
+              {domains.length > 0 && (
+                <select
+                  id="domain"
+                  required={!isNewDept}
+                  value={isNewDept ? NEW_DEPT : domain}
+                  onChange={(e) => {
+                    if (e.target.value === NEW_DEPT) {
+                      setAddingDept(true);
+                      if (domains.includes(domain)) setDomain('');
+                      setTimeout(() => document.getElementById('new-domain')?.focus(), 0);
+                    } else {
+                      setAddingDept(false);
+                      setDomain(e.target.value);
+                    }
+                  }}
+                  className={field}
+                >
+                  <option value="" disabled>Choose a department…</option>
+                  {domains.map((d) => <option key={d} value={d}>{d}</option>)}
+                  <option value={NEW_DEPT}>＋ Add new department…</option>
+                </select>
+              )}
+              {isNewDept && (
+                <div className={domains.length > 0 ? 'mt-2' : ''}>
+                  <label htmlFor="new-domain" className="text-ink-muted">{domains.length > 0 ? 'New department name' : 'Department name'}</label>
+                  <input id="new-domain" required value={domain} onChange={(e) => setDomain(e.target.value)} className={field} placeholder="Computer Science" maxLength={80} />
+                </div>
+              )}
             </div>
             <div>
               <label htmlFor="term" className="font-medium">Term</label>
