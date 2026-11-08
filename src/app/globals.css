@@ -336,6 +336,14 @@ a {
     transform: none;
   }
 }
+/* Narrow screens have no hover: the name always sits next to the logo. */
+@media (max-width: 639px) {
+  .logo-word {
+    grid-template-columns: 1fr;
+    opacity: 1;
+    transform: none;
+  }
+}
 .logo-link:focus-visible .logo-mark {
   transform: rotate(360deg) scale(1.08);
 }

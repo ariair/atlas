@@ -74,7 +74,7 @@ export default function AlertsMenu() {
         aria-label="Due soon"
         data-open={open}
         style={{ '--pop-origin': '100% 0%' } as React.CSSProperties}
-        className="pop-panel absolute right-0 top-[calc(100%+10px)] z-30 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-white/10 bg-surface/85 p-4 shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
+        className="pop-panel absolute right-0 top-[calc(100%+10px)] z-30 w-[min(22rem,calc(100vw-2rem))] rounded-xl border border-white/10 bg-surface p-4 shadow-[0_14px_40px_rgba(0,0,0,0.45)] backdrop-blur-md"
       >
         <p className="pop-item mb-2 text-ink-muted" style={{ '--i': 0 } as React.CSSProperties}>
           due in the next 7 days

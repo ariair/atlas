@@ -9,6 +9,7 @@ import { useGraphView } from '@/lib/graph/useGraphView';
 import { WorldSchema } from '@/lib/schemas';
 import type { World } from '@/types';
 import GraphLegend from './GraphLegend';
+import BubbleToggle from '@/components/ui/BubbleToggle';
 
 // The graph library needs the browser's canvas, so it is never rendered on the server.
 const GraphCanvas = dynamic(() => import('./GraphCanvas'), {
@@ -95,18 +96,6 @@ function ReadyWorld({ world }: { world: World }) {
     setMode('outline');
     setTimeout(() => outlineTop.current?.focus(), 0);
   };
-  const toggleBtn = (m: 'map' | 'outline', label: string) => (
-    <button
-      type="button"
-      aria-pressed={mode === m}
-      onClick={() => (m === 'outline' ? showOutline() : setMode('map'))}
-      className={`min-h-11 min-w-11 px-4 font-medium ${mode === m ? 'bg-ink text-ink-on-light' : 'text-ink-muted hover:text-ink'}`}
-    >
-      {mode === m && <span aria-hidden="true">✓ </span>}
-      {label}
-    </button>
-  );
-
   return (
     <>
       {/* Keyboard shortcut for people who cannot use the map: the first Tab stop goes to the Outline. */}
@@ -121,10 +110,15 @@ function ReadyWorld({ world }: { world: World }) {
 
       {/* Toolbar: Map / Outline, and search & filters. */}
       <div className="absolute left-3 top-3 z-30 flex max-w-[calc(100%-1.5rem)] flex-wrap items-center gap-2">
-        <div role="group" aria-label="View" className="flex overflow-hidden rounded-xl border border-white/10 bg-surface/80 backdrop-blur-md">
-          {toggleBtn('map', 'map')}
-          {toggleBtn('outline', 'outline')}
-        </div>
+        <BubbleToggle
+          label="View"
+          value={mode}
+          onChange={(m) => (m === 'outline' ? showOutline() : setMode('map'))}
+          options={[
+            { value: 'map', label: 'map' },
+            { value: 'outline', label: 'outline' },
+          ]}
+        />
         <button
           type="button"
           aria-expanded={panelOpen}
