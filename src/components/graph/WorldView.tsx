@@ -127,9 +127,28 @@ function ReadyWorld({ world }: { world: World }) {
             setPanelOpen((o) => !o);
             setTimeout(() => document.getElementById('graph-search')?.focus(), 50);
           }}
-          className="btn min-h-11 rounded-xl border-white/10 bg-surface/80 backdrop-blur-md"
+          className="btn min-h-11 gap-2 rounded-xl border-white/10 bg-surface/80 backdrop-blur-md active:scale-[0.97]"
         >
+          <svg width="18" height="18" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round" aria-hidden="true">
+            <circle cx="10.5" cy="10.5" r="6" />
+            <path d="m15 15 5 5" />
+          </svg>
           search &amp; filters{view.activeFilters > 0 ? ` (${view.activeFilters})` : ''}
+          <svg
+            width="12"
+            height="12"
+            viewBox="0 0 12 12"
+            fill="none"
+            stroke="currentColor"
+            strokeWidth="1.6"
+            strokeLinecap="round"
+            strokeLinejoin="round"
+            aria-hidden="true"
+            className="shrink-0 transition-transform duration-200 ease-[cubic-bezier(0.23,1,0.32,1)]"
+            style={{ transform: panelOpen ? 'rotate(180deg)' : 'none' }}
+          >
+            <path d="M2.5 4.5 6 8l3.5-3.5" />
+          </svg>
         </button>
         {view.focus && view.activeNode && (
           <span role="status" className="max-sm:sr-only rounded-xl border border-white/10 bg-surface/80 px-3 py-2 text-ink-muted backdrop-blur-md">
@@ -138,15 +157,16 @@ function ReadyWorld({ world }: { world: World }) {
         )}
       </div>
 
-      {panelOpen && (
-        <div
-          id="search-panel"
-          ref={searchBox}
-          className="absolute left-3 top-[4.25rem] z-30 max-h-[calc(100%-6rem)] w-[min(28rem,calc(100%-1.5rem))] overflow-auto rounded-xl border border-white/10 bg-surface/90 p-4 backdrop-blur-md"
-        >
-          <SearchFilterBar view={view} />
-        </div>
-      )}
+      {/* Always mounted so it can animate out; .pop-panel hides it (and takes it out of the tab order) while closed. */}
+      <div
+        id="search-panel"
+        ref={searchBox}
+        data-open={panelOpen}
+        style={{ '--pop-origin': '0% 0%' } as React.CSSProperties}
+        className="pop-panel absolute left-3 top-[4.25rem] z-30 max-h-[calc(100%-6rem)] w-[min(28rem,calc(100%-1.5rem))] overflow-auto rounded-xl border border-white/10 bg-surface/90 p-4 backdrop-blur-md"
+      >
+        <SearchFilterBar view={view} />
+      </div>
 
       {mode === 'outline' && (
         <div className="absolute inset-0 z-20 overflow-auto bg-ground px-4 pb-10 pt-[4.5rem] sm:px-6">

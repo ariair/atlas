@@ -411,6 +411,84 @@ a {
   }
 }
 
+
+/* Landing page use cases (Emil skill): scroll-linked rise-in, only where the browser supports view timelines and the
+   visitor has not asked for reduced motion. Elsewhere everything is simply there. Rows rise as they enter,
+   the numbered node pops, and the rows inside each picture follow one after another (--i). */
+@media (prefers-reduced-motion: no-preference) {
+  @supports (animation-timeline: view()) {
+    .reveal,
+    .reveal-item,
+    .reveal-node {
+      animation: reveal-rise linear both;
+      animation-timeline: view();
+      animation-range: entry 5% entry 45%;
+    }
+    .reveal-item {
+      animation-range: entry calc(10% + var(--i, 0) * 7%) entry calc(50% + var(--i, 0) * 7%);
+    }
+    .reveal-slide-r,
+    .reveal-slide-l {
+      animation: reveal-slide-r linear both;
+      animation-timeline: view();
+      animation-range: entry 0% entry 65%;
+    }
+    .reveal-slide-l {
+      animation-name: reveal-slide-l;
+    }
+    .reveal-node {
+      animation-name: reveal-pop;
+      animation-range: entry 20% entry 60%;
+    }
+  }
+}
+@keyframes reveal-rise {
+  from {
+    opacity: 0;
+    transform: translateY(18px);
+  }
+}
+/* The picture modules slide in from the side they sit on. */
+@keyframes reveal-slide-r {
+  from {
+    opacity: 0;
+    transform: translateX(min(14vw, 10rem));
+  }
+}
+@keyframes reveal-slide-l {
+  from {
+    opacity: 0;
+    transform: translateX(max(-14vw, -10rem));
+  }
+}
+@keyframes reveal-pop {
+  from {
+    opacity: 0;
+    transform: translate(-50%, -50%) scale(0.8);
+  }
+}
+/* The footer logo turns once every 24 seconds. */
+.logo-spin {
+  animation: logo-spin 24s linear infinite;
+}
+@keyframes logo-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+/* The picture frames lift a touch under a mouse and their edge brightens (not on touch screens). */
+.usecase-frame {
+  transition:
+    transform 220ms var(--ease-out),
+    box-shadow 220ms var(--ease-out);
+}
+@media (hover: hover) and (pointer: fine) {
+  .usecase-frame:hover {
+    transform: translateY(-4px);
+    box-shadow: 0 18px 40px rgba(0, 0, 0, 0.35);
+  }
+}
+
 @media (prefers-reduced-motion: reduce) {
   *,
   *::before,

@@ -80,3 +80,11 @@
 - a/canvas and main are identical after merging B's PR #19 (usernames, account drop-down, CLAUDE.md refresh) and PR #20 (log out fix, username box placement, settings link). My PR #18 is merged.
 - Next for me: restyle B's AccountMenu (they built it plain and left the look to me; its logic stays). Other open items are listed in CLAUDE.local.md.
 
+
+## 2026-11-09: Landing page revamp, AccountMenu restyle, search button animation (Person A, small edits in Person B's files)
+- Landing page (`app/page.tsx`): short hero ("Your whole degree, mapped." plus one line, centred buttons) over a faint animated backdrop; four use-case rows (map, deadlines, study guides, practice) with mock screens in `components/landing/UseCases.tsx`; closing call to action; footer (`components/landing/Footer.tsx`) with a slowly turning logo, name and the GitHub logo linking to the repo. Nav bar kept.
+- Backdrop (`components/graph/HeroMap.tsx`) is now a made-up network (about 330 dots, long branches in every direction), coloured by screen region (blue, green, amber, pink) with white bridge dots. Dots drift and ease toward the pointer anywhere on the window; still under reduced motion. Coordinates are rounded so server and browser markup match (avoids a hydration error).
+- Use-case rows: frames edged in the row's subject colour, map-shaped nodes on a centre thread (wide screens), scroll-linked slide-in (CSS view timelines, only with support and no reduced motion), hover lift. Styles at the end of the animation section in `globals.css`.
+- `[auth]` `AccountMenu.tsx` restyled to the bell menu's pop-panel look (scale-in from its corner, staggered rows, flipping chevron, 44px trigger). Logic and `GET/PUT /api/account` unchanged.
+- `[search]` `WorldView.tsx`: "search & filters" button got a magnifier icon, flipping chevron and press scale; its panel is always mounted as a `.pop-panel` so it animates in and out.
+- Edits in Person B's files (AccountMenu, WorldView search wiring): B please be told. Tests: only the known ingest DST test fails.
