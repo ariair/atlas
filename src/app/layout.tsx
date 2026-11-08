@@ -24,7 +24,7 @@ const atkinson = Atkinson_Hyperlegible({
 });
 
 export const metadata: Metadata = {
-  title: { default: "atlas: your whole degree, mapped", template: "%s · atlas" },
+  title: { default: "atlas", template: "%s · atlas" },
   description:
     "Atlas turns your syllabi, slides and notes into one map of everything you learn, collects every deadline, and builds study guides from your own material.",
 };
