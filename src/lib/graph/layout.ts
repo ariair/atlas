@@ -12,6 +12,8 @@ export const DOMAIN_PALETTE = ['#E3A93D', '#78B4DE', '#3DAE8C', '#E8DE7A', '#C98
 export const NEUTRAL_COLOR = '#9CA3AF';
 
 export const ANCHOR_STRENGTH = 0.12; // single-domain nodes
+export const SMALL_GROUP = 3; // groups this small (and not linked to a bridge) are pulled inward
+export const SMALL_GROUP_PULL = 0.3; // how far toward the map's middle, 0 to 1
 export const BRIDGE_STRENGTH = 0.05; // multi-domain (bridge) nodes
 
 export interface CanvasNode extends GraphNode {
@@ -207,6 +209,26 @@ export function toGraphData(world: World): CanvasGraph {
       y: a.y + r * Math.sin(angle),
     };
   });
+
+  // A tiny group of ideas linked only to each other would sit alone at its island's anchor, far from
+  // everything else. Pull such groups' anchors partway to the middle of the map.
+  const parent = new Map(nodes.map((n) => [n.id, n.id]));
+  const find = (id: string): string => {
+    let r = id;
+    while (parent.get(r) !== r) r = parent.get(r)!;
+    parent.set(id, r);
+    return r;
+  };
+  for (const e of edges) parent.set(find(e.from), find(e.to));
+  const groups = new Map<string, CanvasNode[]>();
+  for (const n of nodes) groups.set(find(n.id), [...(groups.get(find(n.id)) ?? []), n]);
+  for (const g of groups.values()) {
+    if (g.length > SMALL_GROUP || g.some((n) => n.domains.length !== 1)) continue;
+    for (const n of g) {
+      n.anchorX *= 1 - SMALL_GROUP_PULL;
+      n.anchorY *= 1 - SMALL_GROUP_PULL;
+    }
+  }
 
   // Links touching a bridge node also count as cross links, so bridges stretch between
   // islands instead of dragging an island's own nodes toward the middle.
