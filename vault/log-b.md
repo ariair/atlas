@@ -114,3 +114,9 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 - Each guide/quiz and each written answer marked counts against the daily AI limit.
 - Tested: 225 tests, one real Haiku run (guide, 4 quiz styles, injection attempt scored 0/2). Not tested: saving mastery to the database, Mermaid validation/repair.
 - Person A: new routes are in your folders; the study and quiz screens are still to build.
+
+## 2026-11-07: Study page template (Person B, in Person A's app/(app)/study at the user's request)
+- Plain working screens at /study: topic picker (grouped by course, `?nodes=a,b` preselects), options, study guide, quiz, results with mark schemes and mastery change. Files: `page.tsx`, `StudyScreen.tsx`, `GuideView.tsx`, `QuizView.tsx`, `api.ts`, `styles.ts` (all in app/(app)/study). Person A restyles freely.
+- AppNav got a `[study]` link (one line). Concept map shows as text; the Mermaid source is behind a toggle, a renderer is still to add.
+- Tested in demo mode in the browser (guide, 5-question quiz, marking) and axe: no violations, dark/light x default/all accessibility. Not tested logged in with real AI or on a phone width.
+- Note: restart `npm run dev` if the nav shows no "study" link or the console shows a nav hydration warning.

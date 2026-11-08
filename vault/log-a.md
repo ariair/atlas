@@ -56,3 +56,7 @@
 - Map key: scrolls and shrinks on small windows (single column under 760px), has a divider between subjects/courses and the shape key, and bridge now sits with the shapes.
 - Upload: the button says "Read"; the topics table has "Add a row" (blank row to fill in name, type and summary; saving is blocked for blank or repeated names). Helpers `addBlankNode` and `nodeProblem` in src/lib/ingest/editDraft.ts, tested.
 - Main now has Person B's search/filter PR (#11); merge main next.
+
+## 2026-11-08: Map toggle and phone menu bar (Person A)
+- `BubbleToggle` (components/ui) gives the map | outline switch the same sliding bubble as the top bar. Person B's behaviour in WorldView is unchanged (outline still moves focus to the Outline heading).
+- Phone bar (under 640px): logo with its name always shown, bell, three-bar menu at the far right holding every page link plus log in / sign up (`AuthLinks variant="menu"`). Adding the study page later is one entry in LINKS. Top bar is now z-40 so its menus sit above the map controls; menus are solid.
