@@ -75,3 +75,8 @@
 
 ## 2026-11-08: CLAUDE.md update (Person A)
 - Merged main (B's PR #19: usernames, account drop-down, CLAUDE.md refresh) and added my notes on top: grey look and Figma link, how the map layout works and the "setup must re-run when the page returns" gotcha, the UI shell, and a line per page (study, deadlines, settings, upload). B please read it before editing the map or nav.
+
+## 2026-11-08: Synced with Person B (Person A)
+- a/canvas and main are identical after merging B's PR #19 (usernames, account drop-down, CLAUDE.md refresh) and PR #20 (log out fix, username box placement, settings link). My PR #18 is merged.
+- Next for me: restyle B's AccountMenu (they built it plain and left the look to me; its logic stays). Other open items are listed in CLAUDE.local.md.
+
