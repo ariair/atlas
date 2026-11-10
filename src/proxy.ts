@@ -1,6 +1,7 @@
 import { NextResponse, type NextRequest } from 'next/server';
 import { getAuth0 } from '@/lib/auth0';
 import { CLOSED_PAGE, GATE_COOKIE, decideAccess, sha256Hex } from '@/lib/gate';
+import { spendLocked } from '@/db/spend';
 
 // Runs before every page and API route. Two jobs, in this order:
 //  1. The site access gate (see src/lib/gate.ts): while SITE_ACCESS_KEY is set, visitors without the key are turned away.
@@ -38,6 +39,12 @@ export async function proxy(request: NextRequest) {
   }
 
   const auth0 = getAuth0();
+  // [spend] Once the Claude spending cap is reached, no new logins or sign ups (log out and sessions already open still work).
+  if (auth0 && (url.pathname === '/auth/login' || url.pathname === '/auth/callback') && (await spendLocked())) {
+    const res = NextResponse.redirect(new URL('/', url));
+    res.headers.set('Cache-Control', 'no-store');
+    return res;
+  }
   return auth0 ? auth0.middleware(request) : NextResponse.next();
 }
 

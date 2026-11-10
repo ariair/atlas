@@ -97,6 +97,12 @@ export const documents = pgTable(
   (t) => [primaryKey({ columns: [t.userId, t.hash] })],
 );
 
+// One row ('total') with the estimated dollars spent on the Claude API so far; at the cap (src/lib/spendCap.ts) Atlas locks.
+export const aiSpend = pgTable('ai_spend', {
+  id: text('id').primaryKey(),
+  usd: real('usd').notNull().default(0),
+});
+
 // Per-user daily AI call counter (cost and abuse control).
 export const aiUsage = pgTable(
   'ai_usage',

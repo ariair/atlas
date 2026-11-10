@@ -12,7 +12,6 @@ const PRICES: Record<string, { in: number; out: number }> = {
 };
 
 export function estimateCostUsd(model: string, inputTokens: number, outputTokens: number): number {
-  const p = PRICES[model];
-  if (!p) return 0;
+  const p = PRICES[model] ?? PRICES['claude-sonnet-5-5']; // unknown model: assume Sonnet prices so the spend cap never undercounts
   return (inputTokens * p.in + outputTokens * p.out) / 1_000_000;
 }
