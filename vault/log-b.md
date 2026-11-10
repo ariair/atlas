@@ -163,3 +163,10 @@ Replaces the "For Person A: put search and filters on the map" steps above: they
 ## 2026-11-08 — Login and sign up off after the hackathon
 - `authConfigured()` now returns false when `DEMO=1`, so one env var switches login off even with the Auth0 keys still set: no /auth routes, inactive log in / sign up buttons, every visitor sees the demo (no database, no Claude).
 - To switch it on: add `DEMO=1` to Vercel production and redeploy. To switch it off: remove `DEMO` and redeploy. Accounts and data stay in the database untouched.
+
+## 2026-11-09 — $2 Claude spending lock
+- New table `ai_spend` (migration 0003): one row with the estimated dollars spent on the Claude API. `callClaudeJson` / `callClaudeText` add each call's estimated cost and refuse once the cap is reached (src/db/spend.ts, src/lib/spendCap.ts).
+- At the cap (default $2, override with `AI_SPEND_CAP_USD`): the proxy sends /auth/login and /auth/callback to the home page, `/api/demo` reports `auth.locked` so log in / sign up turn inactive, and AI is off. Logged-in sessions and log out still work.
+- Unknown models are priced like Sonnet so the total never undercounts. The total starts at $0 when the table is created; the lock rechecks every ~20 s.
+- Small marked edits in shared/A files: client.ts, models.ts (`[spend]`), AuthLinks.tsx. Tell Person A.
+- To unlock login: `vercel env rm DEMO production --yes` and redeploy. To reset the total: set `usd` to 0 in `ai_spend`, or raise `AI_SPEND_CAP_USD`.

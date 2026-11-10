@@ -1,6 +1,10 @@
 import Anthropic from '@anthropic-ai/sdk';
 import { z } from 'zod';
 import { estimateCostUsd } from './models';
+import { addSpend, spendLocked } from '../../db/spend'; // [spend] the $2 cap: count every call, refuse once the cap is reached
+
+const LOCKED_ERROR = 'AI is turned off: the spending limit was reached. Try demo mode (?demo=1).';
+const recordSpend = (model: string, i: number, o: number) => void addSpend(estimateCostUsd(model, i, o)).catch(() => {});
 
 const DEFAULT_MAX_TOKENS = 4096;
 const FRIENDLY_ERROR = 'The AI could not produce a usable answer. Please try again, or use demo mode.';
@@ -75,6 +79,7 @@ export async function callClaudeJson<T extends z.ZodType>(
   maxTokens: number = DEFAULT_MAX_TOKENS,
 ): Promise<z.infer<T>> {
   const client = getClient();
+  if (await spendLocked()) throw new AIError(LOCKED_ERROR);
   const inputSchema = z.toJSONSchema(schema) as Anthropic.Messages.Tool.InputSchema;
   const messages: Anthropic.Messages.MessageParam[] = [{ role: 'user', content: user }];
 
@@ -85,6 +90,8 @@ export async function callClaudeJson<T extends z.ZodType>(
       `[ai] model=${model} in=${res.usage.input_tokens} out=${res.usage.output_tokens} ` +
         `cost~$${estimateCostUsd(model, res.usage.input_tokens, res.usage.output_tokens).toFixed(4)}`,
     );
+
+    recordSpend(model, res.usage.input_tokens, res.usage.output_tokens);
 
     const block = res.content.find((b) => b.type === 'tool_use');
     const parsed = schema.safeParse(block && block.type === 'tool_use' ? block.input : undefined);
@@ -114,7 +121,9 @@ export async function callClaudeJson<T extends z.ZodType>(
 /** Plain text call (used by the health/test route). */
 export async function callClaudeText(system: string, user: string, model: string, maxTokens = 64): Promise<string> {
   const client = getClient();
+  if (await spendLocked()) throw new AIError(LOCKED_ERROR);
   const res = await client.messages.create({ model, max_tokens: maxTokens, system, messages: [{ role: 'user', content: user }] });
   console.log(`[ai] model=${model} in=${res.usage.input_tokens} out=${res.usage.output_tokens}`);
+  recordSpend(model, res.usage.input_tokens, res.usage.output_tokens);
   return res.content.map((b) => (b.type === 'text' ? b.text : '')).join('');
 }

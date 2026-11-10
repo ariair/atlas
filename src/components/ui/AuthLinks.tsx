@@ -7,7 +7,7 @@
 import { useEffect, useState } from 'react';
 import AccountMenu from './AccountMenu';
 
-type Auth = { enabled: boolean; loggedIn: boolean; name: string | null };
+type Auth = { enabled: boolean; locked?: boolean; loggedIn: boolean; name: string | null }; // [spend] locked = spending cap reached
 const ghost = "btn relative hidden min-h-9 rounded-full border-transparent bg-transparent px-[clamp(0.5rem,1.2vw,0.875rem)] after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
 const solid = "btn btn-primary relative hidden min-h-9 rounded-full px-[clamp(0.625rem,1.4vw,1rem)] after:absolute after:-inset-1 after:content-[''] sm:inline-flex";
 const LOGIN = '/auth/login?returnTo=%2Fworld';
@@ -24,7 +24,7 @@ export default function AuthLinks({ variant = 'inline' }: { variant?: 'inline' |
       .catch(() => {});
   }, []);
 
-  const live = !!auth?.enabled;
+  const live = !!auth?.enabled && !auth.locked;
   const loggedIn = !!(auth?.enabled && auth.loggedIn);
   if (loggedIn) return <AccountMenu variant={variant} />; // [auth] username drop-down replaces the log out link
   const items = [
